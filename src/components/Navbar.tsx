@@ -13,12 +13,23 @@ const navLinks = [
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const location = useLocation();
+
+  const token = localStorage.getItem("token");
+  const username = localStorage.getItem("username");
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("username");
+    window.location.href = "/";
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-b shadow-soft">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 md:h-20">
+          
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-lg gradient-hero flex items-center justify-center">
@@ -33,7 +44,11 @@ export function Navbar() {
               <Link key={link.href} to={link.href}>
                 <Button
                   variant="nav"
-                  className={location.pathname === link.href ? "bg-muted text-primary" : ""}
+                  className={
+                    location.pathname === link.href
+                      ? "bg-muted text-primary"
+                      : ""
+                  }
                 >
                   {link.label}
                 </Button>
@@ -41,14 +56,40 @@ export function Navbar() {
             ))}
           </div>
 
-          {/* Desktop Auth Buttons */}
+          {/* Desktop Auth Section */}
           <div className="hidden md:flex items-center gap-3">
-            <Link to="/login">
-              <Button variant="ghost">Log In</Button>
-            </Link>
-            <Link to="/register">
-              <Button variant="secondary">Join Now</Button>
-            </Link>
+            {!token ? (
+              <>
+                <Link to="/login">
+                  <Button variant="ghost">Log In</Button>
+                </Link>
+                <Link to="/register">
+                  <Button variant="secondary">Join Now</Button>
+                </Link>
+              </>
+            ) : (
+              <div
+                className="relative"
+              >
+                <Button variant="secondary" className="flex items-center gap-2 px-4" onClick={() => setShowMenu((prev) => !prev)}>
+                  <User className="w-4 h-4" />
+                  <span className="capitalize">{username || "User"}</span>
+                </Button>
+                {showMenu && (
+                  <div className="absolute right-0 mt-2 bg-card border rounded-md shadow-md w-32 z-50">
+                    <button
+                      onClick={() => {
+                        setShowMenu(false);
+                        handleLogout();
+                      }}
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+             </div>
+            )}
+
           </div>
 
           {/* Mobile Menu Button */}
@@ -65,6 +106,7 @@ export function Navbar() {
         {isOpen && (
           <div className="md:hidden absolute top-16 left-0 right-0 bg-card border-b shadow-card animate-slide-up">
             <div className="flex flex-col p-4 gap-2">
+              
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
@@ -79,13 +121,40 @@ export function Navbar() {
                   {link.label}
                 </Link>
               ))}
+
               <hr className="my-2 border-border" />
-              <Link to="/login" onClick={() => setIsOpen(false)}>
-                <Button variant="outline" className="w-full">Log In</Button>
-              </Link>
-              <Link to="/register" onClick={() => setIsOpen(false)}>
-                <Button variant="secondary" className="w-full">Join Now</Button>
-              </Link>
+
+              {!token ? (
+                <>
+                  <Link to="/login" onClick={() => setIsOpen(false)}>
+                    <Button variant="outline" className="w-full">
+                      Log In
+                    </Button>
+                  </Link>
+                  <Link to="/register" onClick={() => setIsOpen(false)}>
+                    <Button variant="secondary" className="w-full">
+                      Join Now
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center justify-center gap-2 font-medium py-2">
+                    <User className="w-4 h-4" />
+                    {username || "User"}
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      handleLogout();
+                      setIsOpen(false);
+                    }}
+                  >
+                    Logout
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         )}

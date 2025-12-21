@@ -67,6 +67,7 @@ const testimonials = [
 ];
 
 const Index = () => {
+  const token = localStorage.getItem("token");
   return (
     <Layout>
       {/* Hero Section */}
@@ -92,11 +93,13 @@ const Index = () => {
               expert coaching, and a vibrant community of athletes.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link to="/register">
-                <Button variant="hero" size="xl" className="w-full sm:w-auto">
-                  Get Started <ArrowRight className="w-5 h-5" />
-                </Button>
-              </Link>
+              {!token && (
+                <Link to="/register">
+                  <Button variant="hero" size="xl" className="w-full sm:w-auto">
+                    Get Started <ArrowRight className="w-5 h-5" />
+                  </Button>
+                </Link>
+              )}
               <Link to="/facilities">
                 <Button variant="hero-outline" size="xl" className="w-full sm:w-auto">
                   Explore Facilities
@@ -241,11 +244,13 @@ const Index = () => {
             Start your free trial today!
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Link to="/register">
-              <Button variant="hero" size="xl">
-                Start Free Trial <ArrowRight className="w-5 h-5" />
-              </Button>
-            </Link>
+            {!token && (
+              <Link to="/register">
+                <Button variant="hero" size="xl">
+                  Start Free Trial <ArrowRight className="w-5 h-5" />
+                </Button>
+              </Link>
+            )}
             <Link to="/membership">
               <Button variant="hero-outline" size="xl">
                 View Membership Plans

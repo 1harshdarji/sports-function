@@ -1,3 +1,6 @@
+import { useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +10,36 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dumbbell, Mail, Lock, ArrowRight } from "lucide-react";
 
 const Login = () => {
+  const navigate = useNavigate();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  try {
+    const res = await axios.post(
+      "http://localhost:5000/api/auth/login",
+      {
+        identifier: email,
+        password: password,
+      }
+    );
+
+    // ✅ store token
+    localStorage.setItem("token", res.data.data.token);
+    localStorage.setItem("username", res.data.data.user.username); // ✅ ADD THIS
+
+    alert("Login successful");
+
+    // ✅ redirect
+    navigate("/");
+  } catch (err: any) {
+    alert(err.response?.data?.message || "Login failed");
+  }
+};
+
   return (
     <div className="min-h-screen flex">
       {/* Left Panel - Form */}
@@ -27,7 +60,7 @@ const Login = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="px-0 space-y-6">
-              <form className="space-y-4">
+              <form className="space-y-4" onSubmit={handleLogin}>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email Address</Label>
                   <div className="relative">
@@ -35,8 +68,8 @@ const Login = () => {
                     <Input 
                       id="email" 
                       type="email" 
-                      placeholder="you@example.com" 
-                      className="pl-10"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                     />
                   </div>
                 </div>
@@ -55,6 +88,8 @@ const Login = () => {
                       type="password" 
                       placeholder="••••••••" 
                       className="pl-10"
+                       value={password}
+                       onChange={(e) => setPassword(e.target.value)}
                     />
                   </div>
                 </div>

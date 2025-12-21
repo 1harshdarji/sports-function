@@ -92,7 +92,7 @@ const getFacilityById = async (req, res, next) => {
  */
 const createFacility = async (req, res, next) => {
     try {
-        const { name, description, category, imageUrl, capacity, pricePerHour, amenities } = req.body;
+        const { name, description, category = null, imageUrl = null, capacity = 1, pricePerHour = null, amenities = [] } = req.body;
 
         const [result] = await db.execute(
             `INSERT INTO facilities (name, description, category, image_url, capacity, price_per_hour, amenities)

@@ -11,6 +11,8 @@ router.post('/register', [
     body('password').isLength({ min: 6 }),
     body('firstName').trim().notEmpty(),
     body('lastName').trim().notEmpty(),
+    body('gender').isIn(['male', 'female', 'other']),
+
     validate
 ], authController.register);
 
@@ -24,7 +26,7 @@ router.post('/login', [
 // Get current user
 router.get('/me', authenticate, authController.getMe);
 
-// Update profile
+// Update profile hello
 router.put('/profile', authenticate, authController.updateProfile);
 
 // Change password

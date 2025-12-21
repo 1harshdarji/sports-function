@@ -43,8 +43,16 @@ React and related frontend technologies.
 # Install dependencies
 npm install
 
-# Start development server
+### Start Frontend
+cd sports-club-hub-main
 npm run dev
 
-# http://localhost:8080.
+### Start Backend
+cd sports-club-hub-main/server
+npm start
+
+Frontend runs on http://localhost:8080  
+Backend runs on http://localhost:5000
+
+#The frontend communicates with the backend using REST APIs over HTTP.
 

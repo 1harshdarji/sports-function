@@ -12,7 +12,7 @@ const db = require('../config/database');
  */
 const register = async (req, res, next) => {
     try {
-        const { username, email, password, firstName, lastName, phone } = req.body;
+        const { username, email, password, firstName, lastName, phone, gender } = req.body;
 
         // Check if user already exists
         const [existing] = await db.execute(
@@ -27,15 +27,15 @@ const register = async (req, res, next) => {
             });
         }
 
-        // Hash password
+        // Hash password yes
         const salt = await bcrypt.genSalt(12);
         const hashedPassword = await bcrypt.hash(password, salt);
 
         // Insert user
         const [result] = await db.execute(
-            `INSERT INTO users (username, email, password, first_name, last_name, phone, role)
-             VALUES (?, ?, ?, ?, ?, ?, 'user')`,
-            [username, email, hashedPassword, firstName, lastName, phone || null]
+            `INSERT INTO users (username, email, password, first_name, last_name, gender, phone, role)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'user')`,
+            [username, email, hashedPassword, firstName, lastName, gender, phone || null]
         );
 
         // Generate JWT token
@@ -55,15 +55,21 @@ const register = async (req, res, next) => {
                     email,
                     firstName,
                     lastName,
+                    gender,
                     role: 'user'
                 },
                 token
             }
         });
     } catch (error) {
-        next(error);
-    }
-};
+        console.error("REGISTER ERROR:", error);
+
+        return res.status(400).json({
+            success: false,
+            message: error.message || "Registration failed from backend",});
+    };
+}
+
 
 /**
  * Login user with email/username and password
@@ -74,7 +80,7 @@ const login = async (req, res, next) => {
 
         // Find user by email or username
         const [users] = await db.execute(
-            `SELECT id, username, email, password, first_name, last_name, role, is_active, avatar_url
+            `SELECT id, username, email, password, first_name, last_name, gender, role, is_active, avatar_url
              FROM users WHERE email = ? OR username = ?`,
             [identifier, identifier]
         );
@@ -126,6 +132,7 @@ const login = async (req, res, next) => {
                     email: user.email,
                     firstName: user.first_name,
                     lastName: user.last_name,
+                    gender: user.gender,
                     role: user.role,
                     avatarUrl: user.avatar_url
                 },
