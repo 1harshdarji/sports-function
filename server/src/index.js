@@ -8,6 +8,7 @@ const express = require('express');
 const cors = require('cors');
 
 // Import routes
+
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const membershipRoutes = require('./routes/membership.routes');
@@ -17,6 +18,8 @@ const eventRoutes = require('./routes/event.routes');
 const coachRoutes = require('./routes/coach.routes');
 const paymentRoutes = require('./routes/payment.routes');
 const adminRoutes = require('./routes/admin.routes');
+const profileRoutes = require('./routes/profile.routes');
+
 
 // Import database connection
 const db = require('./config/database');
@@ -41,6 +44,8 @@ app.use(express.json());
 
 // Parse URL-encoded bodies
 app.use(express.urlencoded({ extended: true }));
+
+
 
 // Request logging (development)
 if (process.env.NODE_ENV === 'development') {
@@ -73,6 +78,9 @@ app.use('/api/events', eventRoutes);
 app.use('/api/coaches', coachRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/payments', require('./routes/payment.routes'));
+
 
 // =============================================
 // ERROR HANDLING

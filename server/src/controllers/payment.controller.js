@@ -10,7 +10,7 @@ const db = require('../config/database');
  */
 const createPayment = async (req, res, next) => {
     try {
-        const { amount, paymentType, referenceId, paymentMethod } = req.body;
+        const {amount, paymentType, paymentMethod, facilityId, bookingDate, startTime, endTime} = req.body;
         const userId = req.user.id;
 
         // Validate payment type
@@ -35,6 +35,33 @@ const createPayment = async (req, res, next) => {
 
         // DUMMY: In production, integrate with Razorpay/Stripe here
         // For now, we simulate a successful payment
+// TEMP: Immediately create booking (demo flow)
+        let bookingId = null;
+
+        if (paymentType === 'booking') {
+            const [bookingResult] = await db.execute(
+                `INSERT INTO bookings 
+                (user_id, facility_id, booking_date, start_time, end_time, total_price, status)
+                VALUES (?, ?, ?, ?, ?, ?, 'confirmed')`,
+                [
+                    userId,
+                    facilityId,
+                    bookingDate,
+                    startTime,
+                    endTime,
+                    amount
+                ]
+            );
+
+            bookingId = bookingResult.insertId;
+
+            // Link booking to payment
+            await db.execute(
+                `UPDATE payments SET reference_id = ?, status = 'completed', paid_at = NOW()
+                WHERE id = ?`,
+                [bookingId, result.insertId]
+            );
+        }
 
         res.status(201).json({
             success: true,
@@ -45,7 +72,8 @@ const createPayment = async (req, res, next) => {
                 amount: parseFloat(amount),
                 status: 'pending',
                 // In production, return gateway order ID for frontend
-                gatewayOrderId: `ORDER_${transactionId}`
+                bookingId
+
             }
         });
     } catch (error) {

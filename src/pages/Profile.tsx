@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,7 +31,98 @@ const achievements = [
   { title: "Social Butterfly", description: "Attend 5 group classes", progress: 5, total: 5 },
 ];
 
+interface UserProfile {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  age: number;
+  gender: string;
+  phone: string;
+}
+
 const Profile = () => {
+  const handleLogout = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("username");
+  window.location.href = "/";
+};
+const handleSaveProfile = async () => {
+  try {
+    const token = localStorage.getItem("token");
+
+    await axios.put(
+      "http://localhost:8080/api/profile",
+      {
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        phone: formData.phone,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    alert("Profile updated successfully");
+  } catch (error) {
+    console.error("Profile update failed", error);
+    alert("Failed to update profile");
+  }
+};
+
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const [formData, setFormData] = useState({
+    first_name: "",
+    last_name: "",
+    phone: "",
+  });
+
+
+  useEffect(() => {
+  const fetchProfile = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await axios.get(
+        "http://localhost:8080/api/profile",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setUser(res.data.data);
+      setFormData({
+        first_name: res.data.data.first_name,
+        last_name: res.data.data.last_name,
+        phone: res.data.data.phone || "",
+      });
+
+    } catch (err) {
+      console.error("Profile fetch failed", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchProfile();
+}, []);
+
+if (loading) {
+  return (
+    <Layout>
+      <div className="container mx-auto px-4 py-12">
+        Loading profile...
+      </div>
+    </Layout>
+  );
+}
   return (
     <Layout>
       {/* Profile Header */}
@@ -45,8 +138,8 @@ const Profile = () => {
               </button>
             </div>
             <div className="text-center md:text-left">
-              <h1 className="text-2xl md:text-3xl font-bold text-primary-foreground">John Doe</h1>
-              <p className="text-primary-foreground/70">john.doe@example.com</p>
+              <h1 className="text-2xl md:text-3xl font-bold text-primary-foreground">{user?.first_name} {user?.last_name}</h1>
+              <p className="text-primary-foreground/70">  {user?.email} </p>
               <div className="flex items-center gap-2 mt-2 justify-center md:justify-start">
                 <Badge className="gradient-coral text-secondary-foreground border-0">Premium Member</Badge>
                 <Badge variant="outline" className="border-primary-foreground/30 text-primary-foreground">
@@ -219,22 +312,22 @@ const Profile = () => {
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>First Name</Label>
-                      <Input defaultValue="John" />
+                      <Input value={user?.first_name || ""} disabled />
                     </div>
                     <div className="space-y-2">
                       <Label>Last Name</Label>
-                      <Input defaultValue="Doe" />
+                      <Input value={formData.last_name}  onChange={(e) => setFormData({ ...formData, last_name: e.target.value })  }/>
                     </div>
                     <div className="space-y-2">
                       <Label>Email</Label>
-                      <Input defaultValue="john.doe@example.com" type="email" />
+                      <Input value={user?.email || ""} disabled />
                     </div>
                     <div className="space-y-2">
                       <Label>Phone</Label>
-                      <Input defaultValue="+1 (555) 123-4567" type="tel" />
+                      <Input  value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })  }/>
                     </div>
                   </div>
-                  <Button>Save Changes</Button>
+                  <Button onClick={handleSaveProfile}> Save Changes </Button>
                 </CardContent>
               </Card>
 
@@ -256,6 +349,22 @@ const Profile = () => {
                   </div>
                 </CardContent>
               </Card>
+                <Card variant="elevated">
+                  <CardHeader>
+                    <CardTitle className="text-lg text-destructive">
+                      Account Actions
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Button
+                      variant="destructive"
+                      onClick={handleLogout}
+                    >
+                      Logout
+                    </Button>
+                  </CardContent>
+                </Card>
+
             </TabsContent>
           </Tabs>
         </div>

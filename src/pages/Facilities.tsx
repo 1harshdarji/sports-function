@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios"; 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Layout } from "@/components/Layout";
@@ -64,9 +65,51 @@ const timeSlots = [
 ];
 
 const Facilities = () => {
-  const [selectedFacility, setSelectedFacility] = useState(facilities[0]);
+  const [mode, setMode] = useState<"SPORT" | "GROUND">("SPORT"); // added
+
+  const [sports, setSports] = useState<any[]>([]); // added
+  const [grounds, setGrounds] = useState<any[]>([]); // added
+
+  const [selectedSport, setSelectedSport] = useState<any | null>(null); // added
+  const [selectedFacility, setSelectedFacility] = useState<any | null>(null); // added
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [isPaying, setIsPaying] = useState(false); // added
+
+
+
+  useEffect(() => {
+    axios
+      .get("/api/facilities") // backend will return SPORTS
+      .then((res) => {
+        setSports(Array.isArray(res.data) ? res.data : []);   // added
+        setSelectedSport(res.data[0]);    // added
+        setSelectedFacility(res.data[0]); // added
+      })
+      .catch((err) => {
+        console.error("Error fetching sports", err);
+      });
+  }, []);
+  const handleSportClick = async (sport: any) => {
+    setSelectedSport(sport); // added
+    setMode("GROUND");       // added
+
+    try {
+      const res = await axios.get("/api/facilities", {
+        params: { sport: sport.sport_type },
+      });
+
+      setGrounds(Array.isArray(res.data) ? res.data : []); // added safety
+      setSelectedFacility(res.data[0]); // added
+    } catch (error) {
+      console.error("Error fetching grounds", error);
+    }
+  };
+
+  // When GROUND is clicked (added)
+  const handleGroundClick = (ground: any) => {
+    setSelectedFacility(ground); // added
+  };
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
@@ -81,6 +124,55 @@ const Facilities = () => {
     }
     return dates;
   };
+  const leftList = Array.isArray(mode === "SPORT" ? sports : grounds)
+  ? (mode === "SPORT" ? sports : grounds)
+  : [];
+  const handleConfirmBooking = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        window.location.href = "/login";
+        return;
+      }
+
+      if (!selectedFacility || !selectedTime) {
+        alert("Select facility and time");
+        return;
+      }
+
+      // 🔥 IMPORTANT: backend expects END TIME
+      const startTime = selectedTime;
+      const endTime = `${String(Number(selectedTime.split(":")[0]) + 1).padStart(2, "0")}:00`;
+
+      const payload = {
+        facilityId: selectedFacility.id,        // ✅ REQUIRED
+        date: selectedDate.toISOString().split("T")[0], // ✅ REQUIRED
+        startTime: startTime,                    // ✅ REQUIRED
+        endTime: endTime,                        // ✅ REQUIRED
+        notes: null                              // ✅ MUST NOT BE undefined
+      };
+
+      console.log("BOOKING PAYLOAD:", payload); // 🔍 DEBUG
+
+      await axios.post(
+        "http://localhost:5000/api/bookings",
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      alert("Booking created successfully");
+      window.location.href = "/profile";
+
+    } catch (err: any) {
+      console.error("Booking error:", err.response?.data || err.message);
+      alert("Booking failed. Please try again.");
+    }
+  };
+
 
   return (
     <Layout>
@@ -107,14 +199,14 @@ const Facilities = () => {
             {/* Facility Selection */}
             <div className="lg:col-span-1 space-y-4">
               <h2 className="text-lg font-semibold mb-4">Select Facility</h2>
-              {facilities.map((facility) => (
+              {leftList.length > 0 && leftList.map((facility) => (
                 <Card
                   key={facility.id}
-                  variant={selectedFacility.id === facility.id ? "outline" : "elevated"}
+                  variant={selectedFacility?.id === facility.id ? "outline" : "elevated"}
                   className={`cursor-pointer ${
-                    selectedFacility.id === facility.id ? 'border-secondary border-2' : ''
+                    selectedFacility?.id === facility.id ? 'border-secondary border-2' : ''
                   }`}
-                  onClick={() => setSelectedFacility(facility)}
+                  onClick={() => mode === "SPORT" ? handleSportClick(facility) : handleGroundClick(facility)}
                 >
                   <CardContent className="p-4 flex items-center gap-4">
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${
@@ -144,8 +236,8 @@ const Facilities = () => {
             <div className="lg:col-span-2">
               <Card variant="elevated">
                 <CardHeader>
-                  <CardTitle className="text-lg">{selectedFacility.name}</CardTitle>
-                  <CardDescription>{selectedFacility.description}</CardDescription>
+                  <CardTitle className="text-lg">{selectedFacility?.name || "Select a facility"}</CardTitle>
+                  <CardDescription>  {selectedFacility?.description || ""}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Date Selection */}
@@ -213,7 +305,7 @@ const Facilities = () => {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Facility</span>
-                        <span className="font-medium">{selectedFacility.name}</span>
+                        <span className="font-medium">{selectedFacility?.name || "—"}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Date</span>
@@ -231,7 +323,8 @@ const Facilities = () => {
                     <Button 
                       variant="hero" 
                       className="w-full mt-4"
-                      disabled={!selectedTime}
+                      disabled={!selectedTime || isPaying}
+                      onClick={handleConfirmBooking}
                     >
                       <Calendar className="w-4 h-4 mr-2" />
                       Confirm Booking

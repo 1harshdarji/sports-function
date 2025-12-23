@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Dumbbell, User } from "lucide-react";
@@ -13,17 +13,14 @@ const navLinks = [
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
-  const [showMenu, setShowMenu] = useState(false);
+  
   const location = useLocation();
+  const navigate = useNavigate();
 
   const token = localStorage.getItem("token");
   const username = localStorage.getItem("username");
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("username");
-    window.location.href = "/";
-  };
+
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-b shadow-soft">
@@ -68,26 +65,15 @@ export function Navbar() {
                 </Link>
               </>
             ) : (
-              <div
-                className="relative"
+              <Button
+                variant="secondary"
+                className="flex items-center gap-2 px-4"
+                onClick={() => navigate("/profile")}
               >
-                <Button variant="secondary" className="flex items-center gap-2 px-4" onClick={() => setShowMenu((prev) => !prev)}>
-                  <User className="w-4 h-4" />
-                  <span className="capitalize">{username || "User"}</span>
-                </Button>
-                {showMenu && (
-                  <div className="absolute right-0 mt-2 bg-card border rounded-md shadow-md w-32 z-50">
-                    <button
-                      onClick={() => {
-                        setShowMenu(false);
-                        handleLogout();
-                      }}
-                    >
-                      Logout
-                    </button>
-                  </div>
-                )}
-             </div>
+                <User className="w-4 h-4" />
+                <span className="capitalize">{username || "User"}</span>
+              </Button>
+
             )}
 
           </div>
@@ -147,12 +133,13 @@ export function Navbar() {
                     variant="outline"
                     className="w-full"
                     onClick={() => {
-                      handleLogout();
+                      navigate("/profile");
                       setIsOpen(false);
                     }}
                   >
-                    Logout
+                    Profile
                   </Button>
+
                 </>
               )}
             </div>
