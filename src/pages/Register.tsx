@@ -1,3 +1,5 @@
+const API_BASE_URL = "http://localhost:5000"
+//const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 import { useState } from "react"; // added
 import axios from "axios"; //added
 import { useNavigate } from "react-router-dom"; //added
@@ -33,7 +35,8 @@ const Register = () => { //added from here as
     e.preventDefault();
 
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/register",
+      axios.post(`${API_BASE_URL}/api/auth/register`, 
+
         {
           username: formData.username,
           firstName: formData.firstName,
