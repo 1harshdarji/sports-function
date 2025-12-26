@@ -8,6 +8,8 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Membership from "./pages/Membership";
 import Facilities from "./pages/Facilities";
+import Grounds from "./pages/Grounds"; //Added
+import Booking from "./pages/Booking"; // Added
 import Events from "./pages/Events";
 import Payment from "./pages/Payment";
 import Profile from "./pages/Profile";
@@ -29,6 +31,8 @@ const App = () => (
           <Route path="/register" element={<Register />} />
           <Route path="/membership" element={<Membership />} />
           <Route path="/facilities" element={<Facilities />} />
+          <Route path="/grounds/:sportKey" element={<Grounds />} />
+          <Route path="/booking/:facilityId" element={<Booking />} />
           <Route path="/events" element={<Events />} />
           <Route path="/payment" element={<Payment />} />
           <Route path="/profile" element={<Profile />} />

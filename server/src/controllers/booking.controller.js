@@ -63,7 +63,7 @@ const getMyBookings = async (req, res, next) => {
  */
 const createBooking = async (req, res, next) => {
     try {
-        const { facilityId, date, startTime, endTime, notes } = req.body;
+        const { facilityId, slotId, date, startTime, endTime, notes } = req.body;
         const userId = req.user.id;
 
         // Get facility details
@@ -105,9 +105,13 @@ const createBooking = async (req, res, next) => {
 
         // Create booking
         const [result] = await db.execute(
-            `INSERT INTO bookings (user_id, facility_id, booking_date, start_time, end_time, total_price, notes, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
-            [userId, facilityId, date, startTime, endTime, totalPrice, notes || null]
+            `INSERT INTO bookings (user_id, facility_id, slot_id, booking_date, start_time, end_time, total_price, notes, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+            [userId, facilityId, slotId, date, startTime, endTime, totalPrice, notes || null]
+        );
+        await db.execute(
+            'UPDATE facility_slots SET is_available = FALSE WHERE id = ?',
+            [slotId]
         );
 
         res.status(201).json({

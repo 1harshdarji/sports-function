@@ -33,12 +33,16 @@ const getAllFacilities = async (req, res, next) => {
             data: facilities.map(f => ({
                 id: f.id,
                 name: f.name,
+                sportKey: f.sport_key,//added
                 description: f.description,
                 category: f.category,
+                location: f.location,
                 imageUrl: f.image_url,
                 capacity: f.capacity,
                 pricePerHour: parseFloat(f.price_per_hour),
-                amenities: f.amenities ? JSON.parse(f.amenities) : [],
+                amenities: Array.isArray(f.amenities)
+                    ? f.amenities
+                    : (f.amenities ? JSON.parse(f.amenities) : []),
                 isActive: f.is_active
             }))
         });
@@ -73,15 +77,20 @@ const getFacilityById = async (req, res, next) => {
             data: {
                 id: facility.id,
                 name: facility.name,
+                sportKey: facility.sport_key,
                 description: facility.description,
                 category: facility.category,
+                location: facility.location,
                 imageUrl: facility.image_url,
                 capacity: facility.capacity,
                 pricePerHour: parseFloat(facility.price_per_hour),
-                amenities: facility.amenities ? JSON.parse(facility.amenities) : [],
+                amenities: Array.isArray(facility.amenities)
+                    ? facility.amenities
+                    : (facility.amenities ? JSON.parse(facility.amenities) : []),
                 isActive: facility.is_active
             }
         });
+
     } catch (error) {
         next(error);
     }
@@ -197,8 +206,11 @@ const getAvailableSlots = async (req, res, next) => {
             });
         }
 
-        const bookingDate = new Date(date);
-        const dayOfWeek = bookingDate.getDay();
+            const bookingDate = new Date(date);
+            // JS: 0=Sunday, 1=Monday ... 6=Saturday
+            const jsDay = bookingDate.getDay();
+            // DB: 1=Monday ... 7=Sunday
+            const dayOfWeek = jsDay === 0 ? 7 : jsDay;
 
         // Get all slots for this day
         const [slots] = await db.execute(

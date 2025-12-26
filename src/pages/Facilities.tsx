@@ -1,177 +1,67 @@
-import { useState, useEffect } from "react";
-import axios from "axios"; 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Card, CardContent } from "@/components/ui/card";
 import { Layout } from "@/components/Layout";
 import { 
-  Waves, 
-  Target, 
-  Dumbbell, 
-  Users, 
-  Clock, 
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
   MapPin
 } from "lucide-react";
 
-const facilities = [
+const SPORTS = [
   {
-    id: 1,
-    name: "Olympic Swimming Pool",
-    icon: Waves,
-    description: "50m heated pool with 8 lanes, perfect for lap swimming and water sports.",
-    hours: "6:00 AM - 10:00 PM",
-    capacity: 40,
-    available: 12,
-    image: "🏊"
+    key: "football",
+    name: "Football",
+    image: "https://images.unsplash.com/photo-1509027572446-af8401acfdc3"
   },
   {
-    id: 2,
-    name: "Tennis Courts",
-    icon: Target,
-    description: "4 indoor and 6 outdoor courts with professional-grade surfaces.",
-    hours: "7:00 AM - 11:00 PM",
-    capacity: 20,
-    available: 8,
-    image: "🎾"
+    key: "cricket",
+    name: "Cricket",
+    image: "https://images.unsplash.com/photo-1593766788306-28561086694e"
   },
   {
-    id: 3,
-    name: "Fitness Center",
-    icon: Dumbbell,
-    description: "State-of-the-art equipment including cardio, weights, and functional training areas.",
-    hours: "5:00 AM - 12:00 AM",
-    capacity: 100,
-    available: 45,
-    image: "🏋️"
+    key: "badminton",
+    name: "Badminton",
+    image: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e"
   },
   {
-    id: 4,
-    name: "Group Exercise Studios",
-    icon: Users,
-    description: "3 spacious studios for yoga, spinning, HIIT, and dance classes.",
-    hours: "6:00 AM - 9:00 PM",
-    capacity: 30,
-    available: 15,
-    image: "🧘"
+    key: "swimming",
+    name: "Swimming",
+    image: "https://images.unsplash.com/photo-1502904550040-7534597429ae"
   },
+  {
+    key: "tennis",
+    name: "Tennis",
+    image: "https://images.unsplash.com/photo-1508609349937-5ec4ae374ebf"
+  },
+  {
+    key: "basketball",
+    name: "Basketball",
+    image: "https://images.unsplash.com/photo-1519861531473-9200262188bf"
+  },
+  {
+    key: "gym",
+    name: "Gym",
+    image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48"
+  },
+  {
+    key: "yoga",
+    name: "Yoga",
+    image: "https://images.unsplash.com/photo-1545205597-3d9d02c29597"
+  },
+  {
+    key: "wrestling",
+    name: "Wrestling",
+    image: "https://images.unsplash.com/photo-1517649763962-0c623066013b"
+  }
 ];
 
-const timeSlots = [
-  "06:00", "07:00", "08:00", "09:00", "10:00", "11:00",
-  "12:00", "13:00", "14:00", "15:00", "16:00", "17:00",
-  "18:00", "19:00", "20:00", "21:00"
-];
-
+// USE STATES
 const Facilities = () => {
-  const [mode, setMode] = useState<"SPORT" | "GROUND">("SPORT"); // added
 
-  const [sports, setSports] = useState<any[]>([]); // added
-  const [grounds, setGrounds] = useState<any[]>([]); // added
+const navigate = useNavigate();
 
-  const [selectedSport, setSelectedSport] = useState<any | null>(null); // added
-  const [selectedFacility, setSelectedFacility] = useState<any | null>(null); // added
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [isPaying, setIsPaying] = useState(false); // added
-
-
-
-  useEffect(() => {
-    axios
-      .get("/api/facilities") // backend will return SPORTS
-      .then((res) => {
-        setSports(Array.isArray(res.data) ? res.data : []);   // added
-        setSelectedSport(res.data[0]);    // added
-        setSelectedFacility(res.data[0]); // added
-      })
-      .catch((err) => {
-        console.error("Error fetching sports", err);
-      });
-  }, []);
-  const handleSportClick = async (sport: any) => {
-    setSelectedSport(sport); // added
-    setMode("GROUND");       // added
-
-    try {
-      const res = await axios.get("/api/facilities", {
-        params: { sport: sport.sport_type },
-      });
-
-      setGrounds(Array.isArray(res.data) ? res.data : []); // added safety
-      setSelectedFacility(res.data[0]); // added
-    } catch (error) {
-      console.error("Error fetching grounds", error);
-    }
-  };
-
-  // When GROUND is clicked (added)
-  const handleGroundClick = (ground: any) => {
-    setSelectedFacility(ground); // added
-  };
-
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-  };
-
-  const getDates = () => {
-    const dates = [];
-    for (let i = 0; i < 7; i++) {
-      const date = new Date();
-      date.setDate(date.getDate() + i);
-      dates.push(date);
-    }
-    return dates;
-  };
-  const leftList = Array.isArray(mode === "SPORT" ? sports : grounds)
-  ? (mode === "SPORT" ? sports : grounds)
-  : [];
-  const handleConfirmBooking = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        window.location.href = "/login";
-        return;
-      }
-
-      if (!selectedFacility || !selectedTime) {
-        alert("Select facility and time");
-        return;
-      }
-
-      // 🔥 IMPORTANT: backend expects END TIME
-      const startTime = selectedTime;
-      const endTime = `${String(Number(selectedTime.split(":")[0]) + 1).padStart(2, "0")}:00`;
-
-      const payload = {
-        facilityId: selectedFacility.id,        // ✅ REQUIRED
-        date: selectedDate.toISOString().split("T")[0], // ✅ REQUIRED
-        startTime: startTime,                    // ✅ REQUIRED
-        endTime: endTime,                        // ✅ REQUIRED
-        notes: null                              // ✅ MUST NOT BE undefined
-      };
-
-      console.log("BOOKING PAYLOAD:", payload); // 🔍 DEBUG
-
-      await axios.post(
-        "http://localhost:5000/api/bookings",
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      alert("Booking created successfully");
-      window.location.href = "/profile";
-
-    } catch (err: any) {
-      console.error("Booking error:", err.response?.data || err.message);
-      alert("Booking failed. Please try again.");
-    }
-  };
+const handleSportClick = (sport: any) => {
+  navigate(`/grounds/${sport.key}`);
+};
 
 
   return (
@@ -190,151 +80,62 @@ const Facilities = () => {
             Reserve your spot at our world-class facilities
           </p>
         </div>
-      </section>
-
-      {/* Booking Section */}
-      <section className="py-8 md:py-12 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Facility Selection */}
-            <div className="lg:col-span-1 space-y-4">
-              <h2 className="text-lg font-semibold mb-4">Select Facility</h2>
-              {leftList.length > 0 && leftList.map((facility) => (
-                <Card
-                  key={facility.id}
-                  variant={selectedFacility?.id === facility.id ? "outline" : "elevated"}
-                  className={`cursor-pointer ${
-                    selectedFacility?.id === facility.id ? 'border-secondary border-2' : ''
-                  }`}
-                  onClick={() => mode === "SPORT" ? handleSportClick(facility) : handleGroundClick(facility)}
+        <section className="py-10 bg-background">
+          <div className="container mx-auto px-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {SPORTS.map((sport) => (
+                <div
+                  key={sport.key}
+                  onClick={() => handleSportClick(sport)}
+                  className="
+                    relative
+                    h-72                     /* CARD HEIGHT – increase for bigger cards */
+                    rounded-2xl
+                    overflow-hidden
+                    cursor-pointer
+                    shadow-lg               /* BASE SHADOW */
+                    hover:shadow-2xl        /* STRONGER SHADOW ON HOVER */
+                    transition-all
+                    duration-300
+                    group                   /* REQUIRED for hover effects */
+                  "
                 >
-                  <CardContent className="p-4 flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${
-                      selectedFacility.id === facility.id ? 'bg-secondary/20' : 'bg-muted'
-                    }`}>
-                      {facility.image}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-sm">{facility.name}</h3>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {facility.hours}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-semibold text-secondary">
-                        {facility.available}
-                      </div>
-                      <div className="text-xs text-muted-foreground">spots</div>
-                    </div>
-                  </CardContent>
-                </Card>
+                  {/* IMAGE – fills entire card */}
+                  <img
+                    src={sport.image}
+                    alt={sport.name}
+                    className="
+                      h-full
+                      w-full
+                      object-cover          /* IMAGE COVERS FULL CARD */
+                      transition-transform
+                      duration-300
+                      group-hover:scale-105 /* SLIGHT ZOOM ON HOVER */
+                    "
+                  />
+
+                  {/* DARK OVERLAY – hidden by default */}
+                  <div
+                    className="
+                      absolute inset-0
+                      bg-black/50            /* DARK TRANSPARENT OVERLAY */
+                      opacity-0              /* HIDDEN INITIALLY */
+                      group-hover:opacity-100
+                      transition-opacity
+                      duration-300
+                      flex items-center justify-center
+                    "
+                  >
+                    {/* SPORT NAME – shows only on hover */}
+                    <h3 className="text-white text-2xl font-semibold tracking-wide">
+                      {sport.name}
+                    </h3>
+                  </div>
+                </div>
               ))}
             </div>
-
-            {/* Date & Time Selection */}
-            <div className="lg:col-span-2">
-              <Card variant="elevated">
-                <CardHeader>
-                  <CardTitle className="text-lg">{selectedFacility?.name || "Select a facility"}</CardTitle>
-                  <CardDescription>  {selectedFacility?.description || ""}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Date Selection */}
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-semibold">Select Date</h3>
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <ChevronLeft className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <ChevronRight className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-7 gap-2">
-                      {getDates().map((date, i) => (
-                        <button
-                          key={i}
-                          onClick={() => setSelectedDate(date)}
-                          className={`p-3 rounded-lg text-center transition-all ${
-                            selectedDate.toDateString() === date.toDateString()
-                              ? 'gradient-coral text-secondary-foreground shadow-coral'
-                              : 'bg-muted hover:bg-muted/80'
-                          }`}
-                        >
-                          <div className="text-xs opacity-70">
-                            {date.toLocaleDateString('en-US', { weekday: 'short' })}
-                          </div>
-                          <div className="text-lg font-semibold">{date.getDate()}</div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Time Selection */}
-                  <div>
-                    <h3 className="font-semibold mb-4">Select Time</h3>
-                    <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
-                      {timeSlots.map((time) => {
-                        const isAvailable = Math.random() > 0.3;
-                        return (
-                          <button
-                            key={time}
-                            onClick={() => isAvailable && setSelectedTime(time)}
-                            disabled={!isAvailable}
-                            className={`p-2 rounded-lg text-sm transition-all ${
-                              selectedTime === time
-                                ? 'gradient-coral text-secondary-foreground shadow-coral'
-                                : isAvailable
-                                ? 'bg-muted hover:bg-primary hover:text-primary-foreground'
-                                : 'bg-muted/50 text-muted-foreground cursor-not-allowed line-through'
-                            }`}
-                          >
-                            {time}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Booking Summary */}
-                  <div className="bg-muted rounded-xl p-4">
-                    <h3 className="font-semibold mb-3">Booking Summary</h3>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Facility</span>
-                        <span className="font-medium">{selectedFacility?.name || "—"}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Date</span>
-                        <span className="font-medium">{formatDate(selectedDate)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Time</span>
-                        <span className="font-medium">{selectedTime || 'Not selected'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Duration</span>
-                        <span className="font-medium">1 hour</span>
-                      </div>
-                    </div>
-                    <Button 
-                      variant="hero" 
-                      className="w-full mt-4"
-                      disabled={!selectedTime || isPaying}
-                      onClick={handleConfirmBooking}
-                    >
-                      <Calendar className="w-4 h-4 mr-2" />
-                      Confirm Booking
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
           </div>
-        </div>
+        </section>
       </section>
     </Layout>
   );
