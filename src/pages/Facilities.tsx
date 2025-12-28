@@ -20,12 +20,12 @@ const SPORTS = [
   {
     key: "badminton",
     name: "Badminton",
-    image: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e"
+    image: "https://images.unsplash.com/photo-1721760886982-3c643f05813d?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
   },
   {
     key: "swimming",
     name: "Swimming",
-    image: "https://images.unsplash.com/photo-1502904550040-7534597429ae"
+    image: "https://t4.ftcdn.net/jpg/03/09/96/91/240_F_309969130_8X2AuHtA0yUbKH1i5BH2PeHqUakLivfg.jpg"
   },
   {
     key: "tennis",

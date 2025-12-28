@@ -14,6 +14,8 @@ import Events from "./pages/Events";
 import Payment from "./pages/Payment";
 import Profile from "./pages/Profile";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminBookings from "./pages/AdminBookings";
+import AdminRoute from "./pages/AdminRoute";
 import Coaches from "./pages/Coaches";
 import NotFound from "./pages/NotFound";
 
@@ -36,7 +38,8 @@ const App = () => (
           <Route path="/events" element={<Events />} />
           <Route path="/payment" element={<Payment />} />
           <Route path="/profile" element={<Profile />} />
-          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute> }/>
+          <Route path="/admin/bookings" element={<AdminRoute><AdminBookings /></AdminRoute>}/>
           <Route path="/coaches" element={<Coaches />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -221,8 +221,105 @@ const getRecentActivity = async (req, res, next) => {
     }
 };
 
+/**
+ * Get all pending bookings (Admin)
+ */
+const getPendingBookings = async (req, res, next) => {
+  try {
+    const [rows] = await db.execute(
+      `SELECT 
+        b.id,
+        b.user_id,
+        u.username,
+        u.email,
+        b.facility_id,
+        f.name AS facility_name,
+        b.slot_id,
+        b.booking_date,
+        b.start_time,
+        b.end_time,
+        b.total_price,
+        b.status,
+        b.created_at
+       FROM bookings b
+       JOIN users u ON u.id = b.user_id
+       JOIN facilities f ON f.id = b.facility_id
+       WHERE b.status = 'pending'
+       ORDER BY b.created_at DESC`
+    );
+
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Approve booking
+ */
+const approveBooking = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    await db.execute(
+        `UPDATE bookings SET status = 'confirmed' WHERE id = ?`, // FIX: keep same status used everywhere
+        [id]
+    );
+
+
+    res.json({
+      success: true,
+      message: "Booking approved",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Reject booking
+ */
+const rejectBooking = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // get slot id
+    const [[booking]] = await db.execute(
+      `SELECT slot_id FROM bookings WHERE id=?`,
+      [id]
+    );
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Booking not found" });
+    }
+
+    // reject booking
+    await db.execute(
+      `UPDATE bookings SET status='rejected' WHERE id=?`,
+      [id]
+    );
+
+    // unlock slot
+    await db.execute(
+      `UPDATE facility_slots SET is_available=1 WHERE id=?`,
+      [booking.slot_id]
+    );
+
+    res.json({
+      success: true,
+      message: "Booking rejected",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 module.exports = {
-    getDashboardStats,
-    getRevenueReport,
-    getRecentActivity
+  getDashboardStats,
+  getRevenueReport,
+  getRecentActivity,
+  getPendingBookings,
+  approveBooking,
+  rejectBooking,
 };

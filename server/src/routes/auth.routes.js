@@ -4,7 +4,7 @@ const { validate } = require('../middleware/validate.middleware');
 const { authenticate } = require('../middleware/auth.middleware');
 const authController = require('../controllers/auth.controller');
 
-// Register
+// Register done
 router.post('/register', [
     body('username').trim().isLength({ min: 3, max: 50 }),
     body('email').isEmail().normalizeEmail(),

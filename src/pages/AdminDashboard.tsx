@@ -1,11 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Users, 
-  Calendar, 
-  DollarSign, 
-  TrendingUp, 
+import {
+  Users,
+  Calendar,
+  DollarSign,
+  TrendingUp,
   BarChart3,
   Activity,
   Clock,
@@ -14,11 +14,24 @@ import {
   MoreHorizontal,
   Bell,
   Search,
-  Menu
+  Menu,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
+/* =========================
+   Admin Logout (ADMIN ONLY)
+========================= */
+const handleAdminLogout = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  localStorage.removeItem("role");
+  window.location.href = "/login";
+};
+
+/* =========================
+   Static Dashboard Data
+========================= */
 const stats = [
   { label: "Total Members", value: "5,234", change: "+12%", trend: "up", icon: Users },
   { label: "Active Bookings", value: "142", change: "+8%", trend: "up", icon: Calendar },
@@ -41,36 +54,44 @@ const recentBookings = [
 ];
 
 const sidebarLinks = [
-  { label: "Dashboard", icon: BarChart3, active: true },
-  { label: "Members", icon: Users, active: false },
-  { label: "Bookings", icon: Calendar, active: false },
-  { label: "Coaches", icon: Activity, active: false, href: "/coaches" },
-  { label: "Revenue", icon: DollarSign, active: false },
+  { label: "Dashboard", icon: BarChart3, href: "/admin" },
+  { label: "Members", icon: Users, href: "/admin/members" },
+  { label: "Bookings", icon: Calendar, href: "/admin/bookings" },
+  { label: "Coaches", icon: Activity, href: "/admin/coaches" },
+  { label: "Revenue", icon: DollarSign, href: "/admin/revenue" },
 ];
 
+/* =========================
+   Admin Dashboard Component
+========================= */
 const AdminDashboard = () => {
+  const location = useLocation();
+
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Sidebar */}
+      {/* ================= Sidebar ================= */}
       <aside className="hidden lg:flex flex-col w-64 border-r bg-card">
+        {/* Logo */}
         <div className="p-6 border-b">
-          <Link to="/" className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg gradient-hero flex items-center justify-center">
               <Activity className="w-5 h-5 text-primary-foreground" />
             </div>
             <span className="font-bold">SportHub Admin</span>
-          </Link>
+          </div>
         </div>
+
+        {/* Navigation */}
         <nav className="flex-1 p-4">
           <ul className="space-y-1">
             {sidebarLinks.map((link, i) => (
               <li key={i}>
                 <Link
-                  to={link.href || "#"}
+                  to={link.href}
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                    link.active 
-                      ? 'bg-primary text-primary-foreground' 
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    location.pathname === link.href
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   }`}
                 >
                   <link.icon className="w-5 h-5" />
@@ -80,22 +101,32 @@ const AdminDashboard = () => {
             ))}
           </ul>
         </nav>
+
+        {/* Admin Footer */}
         <div className="p-4 border-t">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
-              <span className="text-lg">👤</span>
+              👤
             </div>
             <div className="flex-1">
               <p className="font-medium text-sm">Admin User</p>
               <p className="text-xs text-muted-foreground">admin@sporthub.com</p>
             </div>
           </div>
+
+          <Button
+            variant="destructive"
+            className="w-full"
+            onClick={handleAdminLogout}
+          >
+            Logout
+          </Button>
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* ================= Main Content ================= */}
       <div className="flex-1 flex flex-col">
-        {/* Top Header */}
+        {/* Header */}
         <header className="h-16 border-b bg-card flex items-center justify-between px-6">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" className="lg:hidden">
@@ -106,41 +137,38 @@ const AdminDashboard = () => {
               <Input placeholder="Search..." className="pl-9 w-64" />
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-secondary rounded-full" />
-            </Button>
-            <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center lg:hidden">
-              <span className="text-sm">👤</span>
-            </div>
-          </div>
+          <Button variant="ghost" size="icon">
+            <Bell className="w-5 h-5" />
+          </Button>
         </header>
 
-        {/* Dashboard Content */}
+        {/* Dashboard */}
         <main className="flex-1 p-6 overflow-auto">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold">Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back! Here's what's happening today.</p>
-          </div>
+          <h1 className="text-2xl font-bold mb-1">Dashboard</h1>
+          <p className="text-muted-foreground mb-6">
+            Welcome back! Here's what's happening today.
+          </p>
 
-          {/* Stats Grid */}
+          {/* Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {stats.map((stat, i) => (
-              <Card key={i} variant="elevated">
+              <Card key={i}>
                 <CardContent className="p-5">
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex justify-between mb-3">
                     <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                       <stat.icon className="w-5 h-5 text-primary" />
                     </div>
-                    <span className={`text-sm font-medium flex items-center gap-1 ${
-                      stat.trend === 'up' ? 'text-accent' : 'text-destructive'
-                    }`}>
+                    <span
+                      className={`text-sm flex items-center gap-1 ${
+                        stat.trend === "up" ? "text-accent" : "text-destructive"
+                      }`}
+                    >
                       {stat.change}
-                      {stat.trend === 'up' 
-                        ? <ArrowUpRight className="w-3 h-3" /> 
-                        : <ArrowDownRight className="w-3 h-3" />
-                      }
+                      {stat.trend === "up" ? (
+                        <ArrowUpRight className="w-3 h-3" />
+                      ) : (
+                        <ArrowDownRight className="w-3 h-3" />
+                      )}
                     </span>
                   </div>
                   <p className="text-2xl font-bold">{stat.value}</p>
@@ -150,71 +178,43 @@ const AdminDashboard = () => {
             ))}
           </div>
 
+          {/* Members + Bookings */}
           <div className="grid lg:grid-cols-2 gap-6">
-            {/* Recent Members */}
-            <Card variant="elevated">
-              <CardHeader className="flex flex-row items-center justify-between py-4">
-                <CardTitle className="text-lg">Recent Members</CardTitle>
-                <Button variant="ghost" size="icon">
-                  <MoreHorizontal className="w-4 h-4" />
-                </Button>
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Members</CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="space-y-4">
-                  {recentMembers.map((member, i) => (
-                    <div key={i} className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center font-medium">
-                          {member.name.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="font-medium text-sm">{member.name}</p>
-                          <p className="text-xs text-muted-foreground">{member.email}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <Badge variant="outline" className="text-xs">{member.plan}</Badge>
-                        <p className="text-xs text-muted-foreground mt-1">{member.joined}</p>
-                      </div>
+              <CardContent className="space-y-4">
+                {recentMembers.map((m, i) => (
+                  <div key={i} className="flex justify-between">
+                    <div>
+                      <p className="font-medium text-sm">{m.name}</p>
+                      <p className="text-xs text-muted-foreground">{m.email}</p>
                     </div>
-                  ))}
-                </div>
+                    <Badge variant="outline">{m.plan}</Badge>
+                  </div>
+                ))}
               </CardContent>
             </Card>
 
-            {/* Recent Bookings */}
-            <Card variant="elevated">
-              <CardHeader className="flex flex-row items-center justify-between py-4">
-                <CardTitle className="text-lg">Today's Bookings</CardTitle>
-                <Button variant="ghost" size="icon">
-                  <MoreHorizontal className="w-4 h-4" />
-                </Button>
+            <Card>
+              <CardHeader>
+                <CardTitle>Today's Bookings</CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="space-y-4">
-                  {recentBookings.map((booking, i) => (
-                    <div key={i} className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center">
-                          <Clock className="w-4 h-4 text-muted-foreground" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-sm">{booking.member}</p>
-                          <p className="text-xs text-muted-foreground">{booking.facility}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium">{booking.time}</p>
-                        <Badge 
-                          variant={booking.status === 'confirmed' ? 'default' : 'secondary'}
-                          className="text-xs"
-                        >
-                          {booking.status}
-                        </Badge>
-                      </div>
+              <CardContent className="space-y-4">
+                {recentBookings.map((b, i) => (
+                  <div key={i} className="flex justify-between">
+                    <div>
+                      <p className="font-medium text-sm">{b.member}</p>
+                      <p className="text-xs text-muted-foreground">{b.facility}</p>
                     </div>
-                  ))}
-                </div>
+                    <Badge
+                      variant={b.status === "confirmed" ? "default" : "secondary"}
+                    >
+                      {b.status}
+                    </Badge>
+                  </div>
+                ))}
               </CardContent>
             </Card>
           </div>

@@ -49,7 +49,14 @@ const authenticate = async (req, res, next) => {
         }
 
         // Attach user to request
-        req.user = user;
+        // Attach normalized user object to request  // FIX: ensure consistent req.user.id everywhere
+        req.user = {
+            id: user.id,          // <-- controllers use req.user.id
+            username: user.username,
+            email: user.email,
+            role: user.role,
+            is_active: user.is_active
+        };
         next();
     } catch (error) {
         if (error.name === 'JsonWebTokenError') {

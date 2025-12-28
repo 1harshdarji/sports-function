@@ -18,13 +18,18 @@ import {
   Edit,
   Camera
 } from "lucide-react";
-
-const bookings = [
-  { id: 1, facility: "Tennis Court 3", date: "Dec 15, 2024", time: "10:00 AM", status: "upcoming" },
-  { id: 2, facility: "Swimming Pool", date: "Dec 16, 2024", time: "7:00 AM", status: "upcoming" },
-  { id: 3, facility: "Fitness Center", date: "Dec 12, 2024", time: "6:00 PM", status: "completed" },
-];
-
+const formatDateOnly = (dateString: string) => {
+  const [year, month, day] = dateString.split("T")[0].split("-");
+  return new Date(
+    Number(year),
+    Number(month) - 1,
+    Number(day)
+  ).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
 const achievements = [
   { title: "Early Bird", description: "Complete 10 morning sessions", progress: 8, total: 10 },
   { title: "Swimmer", description: "Swim 50 laps total", progress: 35, total: 50 },
@@ -75,13 +80,37 @@ const handleSaveProfile = async () => {
 
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-
+  const [userBookings, setUserBookings] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState("overview"); // ✅ ADD
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
     phone: "",
   });
+  
+  useEffect(() => {
+    if (activeTab !== "bookings") return;
 
+    const fetchBookings = async () => {
+      try {
+        const token = localStorage.getItem("token");
+
+        const res = await axios.get(
+          "http://localhost:5000/api/bookings/my",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        setUserBookings(res.data?.data ?? []);
+      } catch (err) {
+        console.error("Bookings fetch failed", err);
+      }
+    };
+    fetchBookings();
+  }, [activeTab]);
 
   useEffect(() => {
   const fetchProfile = async () => {
@@ -97,13 +126,19 @@ const handleSaveProfile = async () => {
         }
       );
 
-      setUser(res.data.data);
-      setFormData({
-        first_name: res.data.data.first_name,
-        last_name: res.data.data.last_name,
-        phone: res.data.data.phone || "",
-      });
+      // ✅ FIX: always read from res.data.data
+      const userData = res.data?.data;
 
+      if (!userData) {
+        throw new Error("User data missing");
+      }
+
+      setUser(userData);
+      setFormData({
+        first_name: userData.first_name || "",
+        last_name: userData.last_name || "",
+        phone: userData.phone || "",
+      });
     } catch (err) {
       console.error("Profile fetch failed", err);
     } finally {
@@ -154,7 +189,7 @@ if (loading) {
       {/* Profile Content */}
       <section className="py-8 md:py-12 bg-background">
         <div className="container mx-auto px-4">
-          <Tabs defaultValue="overview" className="space-y-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="w-full justify-start overflow-x-auto bg-muted p-1 rounded-lg">
               <TabsTrigger value="overview" className="flex items-center gap-2">
                 <User className="w-4 h-4" />
@@ -234,22 +269,45 @@ if (loading) {
                   <CardTitle className="text-lg">My Bookings</CardTitle>
                   <Button size="sm">New Booking</Button>
                 </CardHeader>
+
                 <CardContent>
                   <div className="space-y-4">
-                    {bookings.map((booking) => (
-                      <div key={booking.id} className="flex items-center justify-between p-4 bg-muted rounded-xl">
+                    {userBookings.length === 0 && (
+                      <p className="text-muted-foreground">No bookings yet</p>
+                    )}
+
+                    {userBookings.map((booking) => (
+                      <div
+                        key={booking.id}
+                        className="flex items-center justify-between p-4 bg-muted rounded-xl"
+                      >
                         <div className="flex items-center gap-4">
                           <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                             <Calendar className="w-5 h-5 text-primary" />
                           </div>
+
                           <div>
-                            <h4 className="font-semibold">{booking.facility}</h4>
+                            <h4 className="font-semibold">
+                              {booking.facility?.name ?? "Unknown Facility"}
+                            </h4>
                             <p className="text-sm text-muted-foreground">
-                              {booking.date} at {booking.time}
+                              {booking.date ? formatDateOnly(booking.date) : "Date N/A"}
+                              {" | "}
+                              {booking.startTime} – {booking.endTime}
                             </p>
                           </div>
                         </div>
-                        <Badge variant={booking.status === "upcoming" ? "default" : "secondary"}>
+
+                        <Badge
+                          variant={
+                            booking.status === "confirmed"
+                              ? "default"
+                              : booking.status === "pending"
+                              ? "secondary"
+                              : "outline" // FIX: don't hide unknown states
+                          }
+                        >
+                        
                           {booking.status}
                         </Badge>
                       </div>

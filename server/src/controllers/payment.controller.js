@@ -2,6 +2,9 @@
  * Payment Controller
  * Dummy payment handling (Razorpay/Stripe ready)
  */
+const razorpay = require("../config/razorpay");
+const crypto = require("crypto");
+
 
 const db = require('../config/database');
 
@@ -309,11 +312,128 @@ const updatePaymentStatus = async (req, res, next) => {
         next(error);
     }
 };
+/**
+ * Create Razorpay Order (Booking)
+ */
+const createRazorpayOrder = async (req, res, next) => {
+  try {
+    const { bookingId, amount } = req.body;
+    const userId = req.user.id;
+
+    if (!bookingId || !amount) {
+      return res.status(400).json({
+        success: false,
+        message: "bookingId and amount are required",
+      });
+    }
+
+    const order = await razorpay.orders.create({
+      amount: Math.round(amount * 100), // INR → paise
+      currency: "INR",
+      receipt: `booking_${bookingId}`,
+    });
+
+    // Save payment entry
+    await db.execute(
+      `INSERT INTO payments 
+       (user_id, amount, currency, payment_type, reference_id, gateway, gateway_order_id, status)
+       VALUES (?, ?, 'INR', 'booking', ?, 'razorpay', ?, 'pending')`,
+      [userId, amount, bookingId, order.id]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        orderId: order.id,
+        amount: order.amount,
+        currency: order.currency,
+        key: process.env.RAZORPAY_KEY_ID,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+/**
+ * Verify Razorpay payment & create booking (POST-PAYMENT)
+ */
+const verifyRazorpayPayment = async (req, res, next) => {
+  try {
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      bookingData,
+    } = req.body;
+
+    const userId = req.user.id;
+
+    // 1️⃣ Verify signature
+    const body = razorpay_order_id + "|" + razorpay_payment_id;
+    const expectedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(body.toString())
+      .digest("hex");
+
+    if (expectedSignature !== razorpay_signature) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment verification failed",
+      });
+    }
+
+    // 2️⃣ Create booking (PENDING)
+    const [bookingResult] = await db.execute(
+      `INSERT INTO bookings
+      (user_id, facility_id, slot_id, booking_date, start_time, end_time, total_price, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
+      [
+        userId,
+        bookingData.facilityId,
+        bookingData.slotId,
+        bookingData.date,
+        bookingData.startTime,
+        bookingData.endTime,
+        bookingData.amount,
+      ]
+    );
+
+    const bookingId = bookingResult.insertId;
+
+    // 3️⃣ Update payment record
+    await db.execute(
+      `UPDATE payments
+       SET status='completed',
+           reference_id=?,
+           gateway_payment_id=?,
+           paid_at=NOW()
+       WHERE gateway_order_id=?`,
+      [bookingId, razorpay_payment_id, razorpay_order_id]
+    );
+
+    // 4️⃣ Lock slot
+    await db.execute(
+      `UPDATE facility_slots SET is_available=FALSE WHERE id=?`,
+      [bookingData.slotId]
+    );
+
+    res.json({
+      success: true,
+      message: "Payment verified & booking created",
+      data: { bookingId },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 
 module.exports = {
     createPayment,
     confirmPayment,
     getMyPayments,
     getAllPayments,
-    updatePaymentStatus
+    updatePaymentStatus,
+    createRazorpayOrder,
+    verifyRazorpayPayment,
 };

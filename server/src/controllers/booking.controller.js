@@ -18,6 +18,7 @@ const getMyBookings = async (req, res, next) => {
             FROM bookings b
             JOIN facilities f ON b.facility_id = f.id
             WHERE b.user_id = ?
+            AND b.status IN ('pending', 'confirmed')
         `;
         const params = [userId];
 
@@ -292,11 +293,56 @@ const updateBookingStatus = async (req, res, next) => {
         next(error);
     }
 };
+/**
+ * Admin: Approve booking
+ */
+const approveBooking = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // Check booking exists
+    const [rows] = await db.execute(
+      `SELECT * FROM bookings WHERE id = ?`,
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found",
+      });
+    }
+
+    const booking = rows[0];
+
+    if (booking.status !== "pending") {
+      return res.status(400).json({
+        success: false,
+        message: "Booking is not pending",
+      });
+    }
+
+    // Approve booking
+    await db.execute(
+      `UPDATE bookings SET status = 'confirmed' WHERE id = ?`,
+      [id]
+    );
+
+    res.json({
+      success: true,
+      message: "Booking approved successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 
 module.exports = {
     getMyBookings,
     createBooking,
     cancelBooking,
     getAllBookings,
-    updateBookingStatus
+    updateBookingStatus,
+    approveBooking,
 };

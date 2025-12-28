@@ -30,18 +30,30 @@ const Login = () => {
 
 
     // ✅ store token
+    const user = res.data.data.user;
+
     localStorage.setItem("token", res.data.data.token);
-    localStorage.setItem("username", res.data.data.user.username); // ✅ ADD THIS
+    localStorage.setItem(
+      "user",
+      JSON.stringify({
+        ...user,
+        first_name: user.firstName, // FIX: normalize naming
+        last_name: user.lastName
+      })
+    );
+    localStorage.setItem("role", user.role);
 
     alert("Login successful");
 
-    // ✅ redirect
-    navigate("/");
+    if (user.role === "admin") {
+      navigate("/admin", { replace: true });
+    } else {
+      navigate("/", { replace: true });
+    }
   } catch (err: any) {
     alert(err.response?.data?.message || "Login failed");
   }
 };
-
   return (
     <div className="min-h-screen flex">
       {/* Left Panel - Form */}

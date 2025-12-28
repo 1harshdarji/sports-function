@@ -240,7 +240,8 @@ const getAvailableSlots = async (req, res, next) => {
                 slots: availableSlots.map(s => ({
                     id: s.id,
                     startTime: s.start_time,
-                    endTime: s.end_time
+                    endTime: s.end_time,
+                    isAvailable: s.is_available
                 }))
             }
         });

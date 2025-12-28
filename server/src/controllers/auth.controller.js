@@ -40,7 +40,7 @@ const register = async (req, res, next) => {
 
         // Generate JWT token
         const token = jwt.sign(
-            { userId: result.insertId },
+            { userId: result.insertId, role: 'user' },
             process.env.JWT_SECRET,
             { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
         );
@@ -113,8 +113,8 @@ const login = async (req, res, next) => {
         }
 
         // Generate JWT token
-        const token = jwt.sign(
-            { userId: user.id },
+       const token = jwt.sign(
+            { userId: user.id, role: user.role },
             process.env.JWT_SECRET,
             { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
         );
@@ -177,20 +177,19 @@ const getMe = async (req, res, next) => {
         res.json({
             success: true,
             data: {
-                user: {
-                    id: user.id,
-                    username: user.username,
-                    email: user.email,
-                    firstName: user.first_name,
-                    lastName: user.last_name,
-                    phone: user.phone,
-                    avatarUrl: user.avatar_url,
-                    role: user.role,
-                    createdAt: user.created_at
-                },
+                id: user.id,
+                username: user.username,
+                email: user.email,
+                first_name: user.first_name,   // Added: match profile.controller
+                last_name: user.last_name,     // Added
+                phone: user.phone,
+                avatar_url: user.avatar_url,
+                role: user.role,
+                created_at: user.created_at,
                 membership: memberships.length > 0 ? memberships[0] : null
             }
         });
+
     } catch (error) {
         next(error);
     }
