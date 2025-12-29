@@ -90,9 +90,7 @@ const Booking = () => {
           isAvailable:
             slot.isAvailable === 1 ||
             slot.isAvailable === true ||
-            slot.available === 1 ||
-            slot.booked === 0 ||
-            slot.isBooked === false,
+            slot.isAvailable === "1",
         }));
 
         setSlots(normalizedSlots);
@@ -127,7 +125,12 @@ const Booking = () => {
         "pendingBooking",
         JSON.stringify({
           facilityId,
-          date: selectedDate.toISOString(),
+          date:
+            selectedDate.getFullYear() +
+            "-" +
+            String(selectedDate.getMonth() + 1).padStart(2, "0") +
+            "-" +
+            String(selectedDate.getDate()).padStart(2, "0"),
           slotId: selectedSlot.id,
         })
       );
@@ -305,25 +308,29 @@ const Booking = () => {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Select Time</label>
                 <div className="grid grid-cols-4 gap-2">
-                  {slots.map((slot) => (
-                    <button
-                      key={slot.id}
-                      disabled={!slot.isAvailable}
-                      onClick={() =>
-                        slot.isAvailable && setSelectedSlot(slot)
-                      }
-                      className={`py-2 rounded-lg text-sm transition ${
-                        !slot.isAvailable
-                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                          : selectedSlot?.id === slot.id
-                          ? "bg-orange-500 text-white"
-                          : "bg-gray-100 hover:bg-gray-200"
-                      }`}
-                    >
-                      {formatTo12Hour(slot.startTime)} –{" "}
-                      {formatTo12Hour(slot.endTime)}
-                    </button>
-                  ))}
+                    {slots.map((slot) => {
+                      const isDisabled = !slot.isAvailable;
+                      const isSelected = selectedSlot?.id === slot.id;
+
+                      return (
+                        <button
+                          key={slot.id}
+                          disabled={isDisabled}
+                          onClick={() => !isDisabled && setSelectedSlot(slot)}
+                          className={`
+                            py-2 rounded-lg text-sm transition
+                            ${isDisabled
+                              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                              : isSelected
+                              ? "bg-orange-500 text-white"
+                              : "bg-gray-100 hover:bg-gray-200"}
+                          `}
+                        >
+                          {formatTo12Hour(slot.startTime)} –{" "}
+                          {formatTo12Hour(slot.endTime)}
+                        </button>
+                      );
+                    })}
                 </div>
               </div>
 

@@ -3,19 +3,8 @@ import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { formatBookingDate } from "@/lib/date";
 
-const formatDateOnly = (dateString: string) => {
-  const [year, month, day] = dateString.split("T")[0].split("-");
-  return new Date(
-    Number(year),
-    Number(month) - 1,
-    Number(day)
-  ).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-};
 const AdminBookings = () => {
   const [bookings, setBookings] = useState<any[]>([]);
   const token = localStorage.getItem("token");
@@ -94,14 +83,14 @@ const AdminBookings = () => {
               </p>
               <p>
                 <b>Date:</b>{" "}
-                {formatDateOnly(b.booking_date)}
+                {formatBookingDate(b.booking_date)}
               </p>
               <p>
                 <b>Time:</b> {b.start_time} – {b.end_time}
               </p>
               <p>
                 <b>Requested at:</b>{" "}
-                {new Date(b.created_at).toLocaleString()}
+                {b.created_at ? b.created_at.replace("T", " ").replace(".000Z", "") : "N/A"}
               </p>
             </div>
 

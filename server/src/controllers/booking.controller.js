@@ -64,7 +64,8 @@ const getMyBookings = async (req, res, next) => {
  */
 const createBooking = async (req, res, next) => {
     try {
-        const { facilityId, slotId, date, startTime, endTime, notes } = req.body;
+        const { facilityId, slotId, startTime, endTime, notes } = req.body;
+        const bookingDate = req.body.date.split("T")[0];
         const userId = req.user.id;
 
         // Get facility details
@@ -88,7 +89,7 @@ const createBooking = async (req, res, next) => {
              WHERE facility_id = ? AND booking_date = ? 
              AND start_time = ? AND end_time = ?
              AND status IN ('pending', 'confirmed')`,
-            [facilityId, date, startTime, endTime]
+            [facilityId, bookingDate, startTime, endTime]
         );
 
         if (existingBooking.length > 0) {
@@ -108,7 +109,7 @@ const createBooking = async (req, res, next) => {
         const [result] = await db.execute(
             `INSERT INTO bookings (user_id, facility_id, slot_id, booking_date, start_time, end_time, total_price, notes, status)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
-            [userId, facilityId, slotId, date, startTime, endTime, totalPrice, notes || null]
+            [userId, facilityId, slotId, bookingDate, startTime, endTime, totalPrice, notes || null]
         );
         await db.execute(
             'UPDATE facility_slots SET is_available = FALSE WHERE id = ?',
@@ -121,7 +122,7 @@ const createBooking = async (req, res, next) => {
             data: {
                 id: result.insertId,
                 facilityName: facility.name,
-                date,
+                date:bookingDate,
                 startTime,
                 endTime,
                 totalPrice,

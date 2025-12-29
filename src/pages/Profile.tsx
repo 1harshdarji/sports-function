@@ -18,18 +18,7 @@ import {
   Edit,
   Camera
 } from "lucide-react";
-const formatDateOnly = (dateString: string) => {
-  const [year, month, day] = dateString.split("T")[0].split("-");
-  return new Date(
-    Number(year),
-    Number(month) - 1,
-    Number(day)
-  ).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-};
+import { formatBookingDate } from "@/lib/date";
 const achievements = [
   { title: "Early Bird", description: "Complete 10 morning sessions", progress: 8, total: 10 },
   { title: "Swimmer", description: "Swim 50 laps total", progress: 35, total: 50 },
@@ -291,9 +280,10 @@ if (loading) {
                               {booking.facility?.name ?? "Unknown Facility"}
                             </h4>
                             <p className="text-sm text-muted-foreground">
-                              {booking.date ? formatDateOnly(booking.date) : "Date N/A"}
-                              {" | "}
-                              {booking.startTime} – {booking.endTime}
+                              {booking.date
+                                ? formatBookingDate(booking.date)
+                                : "Date N/A"}{" "}
+                            | {booking.startTime} – {booking.endTime}
                             </p>
                           </div>
                         </div>
