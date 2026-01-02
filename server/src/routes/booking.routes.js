@@ -8,6 +8,8 @@ router.put('/:id/cancel', authenticate, bookingController.cancelBooking);
 router.get('/', authenticate, adminOnly, bookingController.getAllBookings);
 router.put('/:id/status', authenticate, adminOnly, bookingController.updateBookingStatus);
 router.put("/:id/approve", authenticate, adminOnly, bookingController.approveBooking); 
+router.delete('/:id', authenticate, bookingController.deleteBooking);
+
 // NOTE: keep status = 'confirmed' only (no 'approved' anywhere)
 
 module.exports = router;

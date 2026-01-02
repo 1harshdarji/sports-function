@@ -33,7 +33,7 @@ const createPayment = async (req, res, next) => {
              transaction_id, status, metadata)
              VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)`,
             [userId, amount, paymentType, referenceId || null, paymentMethod || 'card', 
-             transactionId, JSON.stringify({ initiated_at: new Date().toISOString().split("T")[0] })]
+             transactionId, JSON.stringify({ initiated_at: new Date().toISOString() })]
         );
 
         // DUMMY: In production, integrate with Razorpay/Stripe here
@@ -381,8 +381,7 @@ const verifyRazorpayPayment = async (req, res, next) => {
         message: "Payment verification failed",
       });
     }
-    // ✅ FIX: normalize booking date to avoid timezone issue
-    const bookingDate = bookingData.date;
+
     // 2️⃣ Create booking (PENDING)
     const [bookingResult] = await db.execute(
       `INSERT INTO bookings
@@ -392,7 +391,7 @@ const verifyRazorpayPayment = async (req, res, next) => {
         userId,
         bookingData.facilityId,
         bookingData.slotId,
-        bookingDate,
+        bookingData.date,
         bookingData.startTime,
         bookingData.endTime,
         bookingData.amount,

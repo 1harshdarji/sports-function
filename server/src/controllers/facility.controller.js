@@ -206,9 +206,15 @@ const getAvailableSlots = async (req, res, next) => {
             });
         }
 
-            const bookingDate = new Date(date);
+            // DO NOT use new Date(date) — it causes UTC shift
+            const [year, month, day] = date.split("-").map(Number);
+
+            // Create LOCAL date (NO timezone conversion)
+            const bookingDate = new Date(year, month - 1, day);
+
             // JS: 0=Sunday, 1=Monday ... 6=Saturday
             const jsDay = bookingDate.getDay();
+
             // DB: 1=Monday ... 7=Sunday
             const dayOfWeek = jsDay === 0 ? 7 : jsDay;
 
@@ -219,7 +225,7 @@ const getAvailableSlots = async (req, res, next) => {
             [id, dayOfWeek]
         );
 
-        // Get already booked slots
+        /* Get already booked slots
         const [bookedSlots] = await db.execute(
             `SELECT start_time, end_time FROM bookings 
              WHERE facility_id = ? AND booking_date = ? AND status IN ('pending', 'confirmed')`,
@@ -231,7 +237,8 @@ const getAvailableSlots = async (req, res, next) => {
             return !bookedSlots.some(booked => 
                 slot.start_time === booked.start_time && slot.end_time === booked.end_time
             );
-        });
+        });*/
+        const availableSlots = slots;
 
         res.json({
             success: true,

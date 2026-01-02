@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Layout } from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { useSearchParams } from "react-router-dom";
+
 import { 
   User, 
   Settings, 
@@ -35,13 +37,66 @@ interface UserProfile {
   gender: string;
   phone: string;
 }
+/* ================= HELPER FUNCTIONS ================= */
+
+// ✅ Format date like: Mon Jan 12 2026
+const formatDate = (dateStr: string) => {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("en-IN", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+// ✅ Convert 24h → 12h (13:00 -> 1:00 PM)
+const formatTime12h = (time: string) => {
+  if (!time) return "";
+  const [h, m] = time.split(":").map(Number);
+  const hour = h % 12 || 12;
+  const ampm = h >= 12 ? "PM" : "AM";
+  return `${hour}:${m.toString().padStart(2, "0")} ${ampm}`;
+};
 
 const Profile = () => {
+  /* ================= LOGOUT ================= */
   const handleLogout = () => {
   localStorage.removeItem("token");
   localStorage.removeItem("username");
   window.location.href = "/";
 };
+
+/* ================= DELETE BOOKING ================= */
+const handleDeleteBooking = async (id: number) => {
+  try {
+    const token = localStorage.getItem("token");
+
+    await axios.delete(
+      `http://localhost:5000/api/bookings/${id}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    // remove card instantly
+    setUserBookings((prev) =>
+      prev.filter((b) => b.id !== id)
+    );
+  } catch (err) {
+    console.error("Delete failed", err);
+    alert("Failed to delete booking");
+  }
+};
+
+/* ================= TAB FROM URL ================= */
+const [searchParams] = useSearchParams();
+useEffect(() => {
+  const tab = searchParams.get("tab");
+  if (tab) setActiveTab(tab);
+}, []);
+
+/* ================= SAVE PROFILE ================= */
 const handleSaveProfile = async () => {
   try {
     const token = localStorage.getItem("token");
@@ -67,16 +122,30 @@ const handleSaveProfile = async () => {
   }
 };
 
+/* ================= STATES ================= */
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [userBookings, setUserBookings] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("overview"); // ✅ ADD
+  const [eventBookings, setEventBookings] = useState([]); // EVENT
+
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
     phone: "",
   });
+
+  /* ================= FETCH EVENTS ================= */  
+  useEffect(() => {
+    if (activeTab !== "events") return;
+    const token = localStorage.getItem("token"); 
+
+    axios.get("http://localhost:5000/api/events/my/bookings", {
+      headers: { Authorization: `Bearer ${token}` }
+    }).then(res => setEventBookings(res.data.data));
+  }, [activeTab]);
   
+  /* ================= FETCH FACILITY BOOKINGS ================= */
   useEffect(() => {
     if (activeTab !== "bookings") return;
 
@@ -85,13 +154,9 @@ const handleSaveProfile = async () => {
         const token = localStorage.getItem("token");
 
         const res = await axios.get(
-          "http://localhost:5000/api/bookings/my",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+          "http://localhost:5000/api/bookings/my",{
+            headers: {Authorization: `Bearer ${token}`,},
+          });
 
         setUserBookings(res.data?.data ?? []);
       } catch (err) {
@@ -101,6 +166,7 @@ const handleSaveProfile = async () => {
     fetchBookings();
   }, [activeTab]);
 
+/* ================= FETCH PROFILE ================= */
   useEffect(() => {
   const fetchProfile = async () => {
     try {
@@ -114,8 +180,6 @@ const handleSaveProfile = async () => {
           },
         }
       );
-
-      // ✅ FIX: always read from res.data.data
       const userData = res.data?.data;
 
       if (!userData) {
@@ -147,9 +211,10 @@ if (loading) {
     </Layout>
   );
 }
+
   return (
     <Layout>
-      {/* Profile Header */}
+      {/* ================= HEADER ================= */}
       <section className="py-8 md:py-12 gradient-hero">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center gap-6">
@@ -175,7 +240,7 @@ if (loading) {
         </div>
       </section>
 
-      {/* Profile Content */}
+      {/* ================= TABS ================= */}
       <section className="py-8 md:py-12 bg-background">
         <div className="container mx-auto px-4">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -183,6 +248,10 @@ if (loading) {
               <TabsTrigger value="overview" className="flex items-center gap-2">
                 <User className="w-4 h-4" />
                 Overview
+              </TabsTrigger>
+              <TabsTrigger value="events" className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                Events
               </TabsTrigger>
               <TabsTrigger value="bookings" className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
@@ -222,7 +291,7 @@ if (loading) {
                 ))}
               </div>
 
-              {/* Achievements */}
+              {/* ================= ACHIEVEMENTS TAB ================= */}
               <Card variant="elevated">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
@@ -251,7 +320,25 @@ if (loading) {
                 </CardContent>
               </Card>
             </TabsContent>
+            
+            {/* ================= EVENTS TAB ================= */}
+            <TabsContent value="events">
+              {eventBookings.map(b => (
+                <div key={b.id} className="border p-4 rounded-lg mb-3">
+                  <h4 className="font-semibold">{b.title}</h4>
+                  <p className="text-sm">{b.location}</p>
+                  <p className="text-sm">
+                    {formatDate(b.event_date)} |{" "}
+                    {formatTime12h(b.start_time)} – {formatTime12h(b.end_time)}
+                  </p>
+                  <p className="text-sm">
+                    Seats: {b.quantity} • ₹{b.total_amount}
+                  </p>
+                </div>
+              ))}
+            </TabsContent>
 
+            {/* ================= BOOKINGS TAB ================= */}
             <TabsContent value="bookings" className="space-y-6">
               <Card variant="elevated">
                 <CardHeader className="flex flex-row items-center justify-between">
@@ -276,30 +363,48 @@ if (loading) {
                           </div>
 
                           <div>
-                            <h4 className="font-semibold">
-                              {booking.facility?.name ?? "Unknown Facility"}
+                            <h4 className="font-semibold capitalize">
+                              {booking.facility?.category || "Sport"}
                             </h4>
+
+                            <p className="text-sm font-medium">
+                              {booking.facility?.name ?? "Unknown Facility"}
+                            </p>
+
+                            <p className="text-xs text-muted-foreground mb-1">
+                              {booking.facility?.location || "Location not available"}
+                            </p>
+
                             <p className="text-sm text-muted-foreground">
                               {booking.date
                                 ? formatBookingDate(booking.date)
                                 : "Date N/A"}{" "}
-                            | {booking.startTime} – {booking.endTime}
+                              | {booking.startTime} – {booking.endTime}
                             </p>
                           </div>
                         </div>
+                           <div className="flex items-center gap-4">
+                              <Badge
+                                className={`px-4 py-2 text-sm font-semibold capitalize ${
+                                  booking.status === "confirmed"
+                                    ? "bg-emerald-100 text-emerald-700"
+                                    : "bg-amber-100 text-amber-700"
+                                }`}
+                              >
+                                {booking.status}
+                              </Badge>
 
-                        <Badge
-                          variant={
-                            booking.status === "confirmed"
-                              ? "default"
-                              : booking.status === "pending"
-                              ? "secondary"
-                              : "outline" // FIX: don't hide unknown states
-                          }
-                        >
-                        
-                          {booking.status}
-                        </Badge>
+                              {booking.status === "confirmed" && (
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  className="px-4 py-2"
+                                  onClick={() => handleDeleteBooking(booking.id)}
+                                >
+                                  Delete
+                                </Button>
+                              )}
+                            </div>
                       </div>
                     ))}
                   </div>
@@ -307,6 +412,7 @@ if (loading) {
               </Card>
             </TabsContent>
 
+            {/* ================= BILLINGS TAB ================= */}
             <TabsContent value="billing" className="space-y-6">
               <Card variant="elevated">
                 <CardHeader>
@@ -327,7 +433,6 @@ if (loading) {
                   </div>
                 </CardContent>
               </Card>
-
               <Card variant="elevated">
                 <CardHeader>
                   <CardTitle className="text-lg">Payment Method</CardTitle>
@@ -351,6 +456,7 @@ if (loading) {
               </Card>
             </TabsContent>
 
+            {/* ================= PERSONAL INFORMATION TAB ================= */}
             <TabsContent value="settings" className="space-y-6">
               <Card variant="elevated">
                 <CardHeader>

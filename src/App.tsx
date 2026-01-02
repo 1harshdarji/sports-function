@@ -10,7 +10,10 @@ import Membership from "./pages/Membership";
 import Facilities from "./pages/Facilities";
 import Grounds from "./pages/Grounds"; //Added
 import Booking from "./pages/Booking"; // Added
-import Events from "./pages/Events";
+import EventsList from "@/pages/events/EventsList";
+import EventDetails from "./pages/events/EventDetails";
+import EventBooking from "@/pages/events/EventBooking";
+import Events from "./pages/events/Events";
 import Payment from "./pages/Payment";
 import Profile from "./pages/Profile";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -36,6 +39,9 @@ const App = () => (
           <Route path="/grounds/:sportKey" element={<Grounds />} />
           <Route path="/booking/:facilityId" element={<Booking />} />
           <Route path="/events" element={<Events />} />
+          <Route path="/events/:eventId" element={<EventDetails />} />
+          <Route path="/events/:eventId/book" element={<EventBooking />} />
+          <Route path="/events" element={<EventsList />} />
           <Route path="/payment" element={<Payment />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute> }/>

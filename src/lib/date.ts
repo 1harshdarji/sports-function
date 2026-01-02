@@ -1,18 +1,10 @@
-export const formatBookingDate = (date: string) => {
-  // date can be:
-  // 1) "2025-12-29"
-  // 2) "2025-12-28T18:30:00.000Z"
-  // We ONLY want YYYY-MM-DD
+export const formatBookingDate = (dateStr: string) => {
+  const [y, m, d] = dateStr.split("T")[0].split("-").map(Number);
 
-  const onlyDate = date.split("T")[0]; // 🔥 key fix
+  const date = new Date(y, m - 1, d);
+  date.setDate(date.getDate() + 1); // 🔥 ADD +1 DAY
 
-  const [year, month, day] = onlyDate.split("-");
-
-  return new Date(
-    Number(year),
-    Number(month) - 1,
-    Number(day)
-  ).toLocaleDateString("en-IN", {
+  return date.toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",

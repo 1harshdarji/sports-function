@@ -1,16 +1,13 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
 import { Layout } from "@/components/Layout";
 import { 
   MapPin
 } from "lucide-react";
-
 const SPORTS = [
   {
     key: "football",
     name: "Football",
-    image: "https://images.unsplash.com/photo-1509027572446-af8401acfdc3"
+    image: "https://i0.wp.com/thetitansfa.com/wp-content/uploads/2024/01/206www.emmahurleyphotography.com_-1-scaled.jpg?fit=2560%2C1708&quality=60&ssl=1"
   },
   {
     key: "cricket",
@@ -30,7 +27,7 @@ const SPORTS = [
   {
     key: "tennis",
     name: "Tennis",
-    image: "https://images.unsplash.com/photo-1508609349937-5ec4ae374ebf"
+    image: "https://media.istockphoto.com/id/1447342123/photo/young-adult-female-hitting-a-backhand-shot.jpg?s=612x612&w=0&k=20&c=g46FfX951ho-yNXWHKrSyMVNae8QPOnOH7zrn6HvuLE="
   },
   {
     key: "basketball",
@@ -50,7 +47,7 @@ const SPORTS = [
   {
     key: "wrestling",
     name: "Wrestling",
-    image: "https://images.unsplash.com/photo-1517649763962-0c623066013b"
+    image: "https://images.unsplash.com/photo-1542468019-550cb643a5e3?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8d3Jlc3RsaW5nJTIwbWF0Y2h8ZW58MHx8MHx8fDA%3D"
   }
 ];
 

@@ -90,7 +90,7 @@ const AdminBookings = () => {
               </p>
               <p>
                 <b>Requested at:</b>{" "}
-                {b.created_at ? b.created_at.replace("T", " ").replace(".000Z", "") : "N/A"}
+                {b.created_at ? new Date(b.created_at).toLocaleString("en-IN") : "N/A"}
               </p>
             </div>
 

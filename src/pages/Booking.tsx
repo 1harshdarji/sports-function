@@ -3,6 +3,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Layout } from "@/components/Layout";
 import { ChevronLeft } from "lucide-react";
+import { formatBookingDate } from "@/lib/date"; // ✅ ADD THIS
+
+const toYMD = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate()
+  ).padStart(2, "0")}`;
 
 const Booking = () => {
   const { facilityId } = useParams();
@@ -14,25 +20,29 @@ const Booking = () => {
 
   const [calendarStartDate, setCalendarStartDate] = useState(() => {
     const d = new Date();
-    d.setHours(0, 0, 0, 0);
+    d.setHours(12, 0, 0, 0); // 🔥 IMPORTANT
     return d;
   });
 
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
 
   /* ---------------- calendar navigation ---------------- */
   const goPrevWeek = () => {
     const d = new Date(calendarStartDate);
     d.setDate(d.getDate() - 7);
     setCalendarStartDate(d);
-    setSelectedDate(d); // ✅ ADD THIS LINE
+    setSelectedDate(new Date(d)); // ✅ ADD THIS LINE
   };
 
   const goNextWeek = () => {
     const d = new Date(calendarStartDate);
     d.setDate(d.getDate() + 7);
     setCalendarStartDate(d);
-    setSelectedDate(d); // ✅ ADD THIS LINE
+    setSelectedDate(new Date(d));// ✅ ADD THIS LINE
   };
 
 
@@ -71,16 +81,9 @@ const Booking = () => {
   useEffect(() => {
     if (!facilityId || !selectedDate) return;
 
-    const date =
-      selectedDate.getFullYear() +
-      "-" +
-      String(selectedDate.getMonth() + 1).padStart(2, "0") +
-      "-" +
-      String(selectedDate.getDate()).padStart(2, "0");
-
     axios
       .get(`http://localhost:5000/api/facilities/${facilityId}/slots`, {
-        params: { date },
+        params: { date: toYMD(selectedDate) },
       })
       .then((res) => {
         const rawSlots = res.data.data.slots || [];
@@ -118,42 +121,40 @@ const Booking = () => {
 
   /* ================= CONFIRM BOOKING ================= */
   const handleConfirmBooking = async () => {
-    const token = localStorage.getItem("token");
+  if (!selectedSlot || !facility) return;
 
-    if (!token) {
-      localStorage.setItem(
-        "pendingBooking",
-        JSON.stringify({
-          facilityId,
-          date:
-            selectedDate.getFullYear() +
-            "-" +
-            String(selectedDate.getMonth() + 1).padStart(2, "0") +
-            "-" +
-            String(selectedDate.getDate()).padStart(2, "0"),
-          slotId: selectedSlot.id,
-        })
-      );
-      navigate("/login");
-      return;
-    }
+  const token = localStorage.getItem("token");
 
-    try {
-      const res = await axios.post(
+  // 🔒 If not logged in → save pending booking
+  if (!token) {
+    localStorage.setItem(
+      "pendingBooking",
+      JSON.stringify({
+        facilityId,
+        slotId: selectedSlot.id,
+        date: toYMD(selectedDate),
+      })
+    );
+    navigate("/login");
+    return;
+  }
+
+  try {
+    /* ================= 1️⃣ CREATE RAZORPAY ORDER ================= */
+    const orderRes = await axios.post(
         "http://localhost:5000/api/payments/razorpay/order",
         {
-          bookingId: selectedSlot.id,
-          amount: facility.pricePerHour,
+          bookingId: selectedSlot.id,          // ONLY for receipt reference
+          amount: facility.pricePerHour,       // facility price
         },
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
 
-      const { orderId, amount, currency, key } = res.data.data;
+      const { orderId, amount, currency, key } = orderRes.data.data;
 
+      /* ================= 2️⃣ OPEN RAZORPAY ================= */
       const options = {
         key,
         amount,
@@ -161,44 +162,42 @@ const Booking = () => {
         name: "SportHub",
         description: `${facility.name} Booking`,
         order_id: orderId,
+
         handler: async function (response: any) {
           try {
+            /* ================= 3️⃣ VERIFY PAYMENT ================= */
             await axios.post(
               "http://localhost:5000/api/payments/razorpay/verify",
               {
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
+
+                // 🔑 FACILITY BOOKING DATA (NOT EVENT)
                 bookingData: {
                   facilityId,
                   slotId: selectedSlot.id,
-                  date:
-                    selectedDate.getFullYear() +
-                    "-" +
-                    String(selectedDate.getMonth() + 1).padStart(2, "0") +
-                    "-" +
-                    String(selectedDate.getDate()).padStart(2, "0"),
+                  date: toYMD(selectedDate),
                   startTime: selectedSlot.startTime,
                   endTime: selectedSlot.endTime,
                   amount: facility.pricePerHour,
-                  status: "pending",
                 },
               },
               {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
+                headers: { Authorization: `Bearer ${token}` },
               }
             );
 
             localStorage.removeItem("pendingBooking");
-            alert("Payment successful! Booking pending admin approval.");
-            navigate("/");
+
+            alert("✅ Payment successful! Booking pending admin approval.");
+            navigate("/profile?tab=bookings");
           } catch (err) {
             console.error(err);
-            alert("Payment succeeded but booking verification failed");
+            alert("Payment done, but booking verification failed");
           }
         },
+
         theme: { color: "#f97316" },
       };
 
@@ -209,6 +208,7 @@ const Booking = () => {
       alert("Failed to start payment");
     }
   };
+
 
   /* ================= UI ================= */
   return (
@@ -283,8 +283,12 @@ const Booking = () => {
 
                   return (
                     <button
-                      key={date.toISOString()}
-                      onClick={() => setSelectedDate(date)}
+                      key={toYMD(date)}
+                      onClick={() => {
+                        const d = new Date(date);
+                        d.setHours(12, 0, 0, 0); // 🔥 FINAL FIX
+                        setSelectedDate(d);
+                      }}
                       className={`rounded-xl py-3 ${
                         isSelected
                           ? "bg-orange-500 text-white"
@@ -359,11 +363,7 @@ const Booking = () => {
                   <div className="flex justify-between">
                     <span>Date</span>
                     <span>
-                      {selectedDate.toLocaleDateString("en-US", {
-                        weekday: "short",
-                        month: "short",
-                        day: "numeric",
-                      })}
+                      {formatBookingDate(toYMD(selectedDate))}
                     </span>
                   </div>
 

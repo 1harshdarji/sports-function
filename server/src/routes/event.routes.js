@@ -1,13 +1,23 @@
-const router = require('express').Router();
-const { authenticate, adminOnly } = require('../middleware/auth.middleware');
-const eventController = require('../controllers/event.controller');
+const express = require('express');
+const router = express.Router();
 
-router.get('/', eventController.getAllEvents);
-router.get('/:id', eventController.getEventById);
-router.post('/', authenticate, adminOnly, eventController.createEvent);
-router.put('/:id', authenticate, adminOnly, eventController.updateEvent);
-router.delete('/:id', authenticate, adminOnly, eventController.deleteEvent);
-router.post('/:id/register', authenticate, eventController.registerForEvent);
-router.delete('/:id/register', authenticate, eventController.unregisterFromEvent);
+const controller = require('../controllers/event.controller');
+const { authenticate, adminOnly } = require('../middleware/auth.middleware');
+
+// PUBLIC
+router.get('/', controller.getAllEvents);
+router.get('/:id', controller.getEventById);
+router.get("/:id/slots", controller.getEventSlotsByDate);
+
+// USER (BOOK EVENT)
+router.post('/book', authenticate, controller.bookEvent);
+
+// ADMIN
+router.post('/', authenticate, adminOnly, controller.createEvent);
+
+router.get("/my/bookings", authenticate, controller.getMyEventBookings);
+
+
 
 module.exports = router;
+    

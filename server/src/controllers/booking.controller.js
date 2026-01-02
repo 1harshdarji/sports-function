@@ -14,7 +14,7 @@ const getMyBookings = async (req, res, next) => {
         const userId = req.user.id;
 
         let query = `
-            SELECT b.*, f.name as facility_name, f.category, f.image_url
+            SELECT b.*, f.name as facility_name, f.category, f.location, f.sport_key, f.image_url
             FROM bookings b
             JOIN facilities f ON b.facility_id = f.id
             WHERE b.user_id = ?
@@ -43,15 +43,17 @@ const getMyBookings = async (req, res, next) => {
                     id: b.facility_id,
                     name: b.facility_name,
                     category: b.category,
+                    location: b.location,
+                    sportKey: b.sport_key,
                     imageUrl: b.image_url
                 },
-                date: b.booking_date,
+                date: b.booking_date.toISOString().split("T")[0],
                 startTime: b.start_time,
                 endTime: b.end_time,
                 totalPrice: parseFloat(b.total_price),
                 status: b.status,
                 notes: b.notes,
-                createdAt: b.created_at
+                createdAt: b.created_at.toISOString()
             }))
         });
     } catch (error) {
@@ -110,10 +112,6 @@ const createBooking = async (req, res, next) => {
             `INSERT INTO bookings (user_id, facility_id, slot_id, booking_date, start_time, end_time, total_price, notes, status)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
             [userId, facilityId, slotId, bookingDate, startTime, endTime, totalPrice, notes || null]
-        );
-        await db.execute(
-            'UPDATE facility_slots SET is_available = FALSE WHERE id = ?',
-            [slotId]
         );
 
         res.status(201).json({
@@ -245,13 +243,13 @@ const getAllBookings = async (req, res, next) => {
                     name: b.facility_name,
                     category: b.category
                 },
-                date: b.booking_date,
+                date: b.booking_date.toISOString().split("T")[0],
                 startTime: b.start_time,
                 endTime: b.end_time,
                 totalPrice: parseFloat(b.total_price),
                 status: b.status,
                 notes: b.notes,
-                createdAt: b.created_at
+                createdAt: b.created_at.toISOString()
             }))
         });
     } catch (error) {
@@ -338,6 +336,22 @@ const approveBooking = async (req, res, next) => {
   }
 };
 
+const deleteBooking = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    await db.execute(
+      `DELETE FROM bookings WHERE id = ? AND user_id = ?`,
+      [id, userId]
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+};
+
 
 module.exports = {
     getMyBookings,
@@ -346,4 +360,5 @@ module.exports = {
     getAllBookings,
     updateBookingStatus,
     approveBooking,
+    deleteBooking,
 };

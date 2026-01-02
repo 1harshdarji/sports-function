@@ -17,6 +17,7 @@ const bookingRoutes = require('./routes/booking.routes');
 const eventRoutes = require('./routes/event.routes');
 const coachRoutes = require('./routes/coach.routes');
 const paymentRoutes = require('./routes/payment.routes');
+const eventPaymentRoutes = require('./routes/eventPayment.routes');
 const adminRoutes = require('./routes/admin.routes');
 const profileRoutes = require('./routes/profile.routes');
 
@@ -75,11 +76,12 @@ app.use('/api/memberships', membershipRoutes);
 app.use('/api/facilities', facilityRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/events', eventRoutes);
+app.use('/api/events/payments', eventPaymentRoutes);
 app.use('/api/coaches', coachRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/profile', profileRoutes);
-app.use('/api/payments', require('./routes/payment.routes'));
+//app.use('/api/payments', require('./routes/payment.routes'));
 
 
 // =============================================

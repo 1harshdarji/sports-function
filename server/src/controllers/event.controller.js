@@ -1,346 +1,345 @@
 /**
- * Event Controller
- * Event management and registration
+ * Event Controller (District-style)
  */
 
 const db = require('../config/database');
 
+
 /**
- * Get all events
+ * Get all events (listing page)
  */
 const getAllEvents = async (req, res, next) => {
-    try {
-        const { category, status, upcoming } = req.query;
+  try {
+    const [events] = await db.execute(`
+    SELECT
+      e.id,
+      e.title,
+      e.category,
+      e.image_url,
+      e.location,
 
-        let query = `SELECT * FROM events WHERE 1=1`;
-        const params = [];
+      MIN(s.price) AS price,
+      MIN(s.event_date) AS event_date,
+      MIN(s.start_time) AS start_time
 
-        if (category) {
-            query += ' AND category = ?';
-            params.push(category);
-        }
+    FROM events e
+    LEFT JOIN event_slots s ON s.event_id = e.id
+    WHERE e.status = 'upcoming'
+    GROUP BY e.id
+    ORDER BY e.created_at DESC
+  `);
 
-        if (status) {
-            query += ' AND status = ?';
-            params.push(status);
-        }
 
-        if (upcoming === 'true') {
-            query += ' AND event_date >= CURDATE() AND status != ?';
-            params.push('cancelled');
-        }
-
-        query += ' ORDER BY event_date ASC, start_time ASC';
-
-        const [events] = await db.execute(query, params);
-
-        res.json({
-            success: true,
-            data: events.map(e => ({
-                id: e.id,
-                title: e.title,
-                description: e.description,
-                category: e.category,
-                imageUrl: e.image_url,
-                date: e.event_date,
-                startTime: e.start_time,
-                endTime: e.end_time,
-                location: e.location,
-                maxParticipants: e.max_participants,
-                currentParticipants: e.current_participants,
-                price: parseFloat(e.price),
-                isFree: e.is_free,
-                status: e.status,
-                spotsLeft: e.max_participants ? e.max_participants - e.current_participants : null
-            }))
-        });
-    } catch (error) {
-        next(error);
-    }
+    res.json({ success: true, data: events });
+  } catch (err) {
+    next(err);
+  }
 };
 
+
 /**
- * Get event by ID
+ * Get event details + available dates
  */
 const getEventById = async (req, res, next) => {
-    try {
-        const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-        const [events] = await db.execute('SELECT * FROM events WHERE id = ?', [id]);
+    const [[event]] = await db.execute(
+      `
+      SELECT 
+        id,
+        title,
+        description,
+        category,
+        image_url,
+        location
+      FROM events
+      WHERE id = ?
+      `,
+      [id]
+    );
 
-        if (events.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Event not found'
-            });
-        }
-
-        const event = events[0];
-
-        // Get registrations if user is admin
-        let registrations = [];
-        if (req.user && req.user.role === 'admin') {
-            const [regs] = await db.execute(
-                `SELECT er.*, u.username, u.email, u.first_name, u.last_name
-                 FROM event_registrations er
-                 JOIN users u ON er.user_id = u.id
-                 WHERE er.event_id = ?`,
-                [id]
-            );
-            registrations = regs;
-        }
-
-        res.json({
-            success: true,
-            data: {
-                id: event.id,
-                title: event.title,
-                description: event.description,
-                category: event.category,
-                imageUrl: event.image_url,
-                date: event.event_date,
-                startTime: event.start_time,
-                endTime: event.end_time,
-                location: event.location,
-                maxParticipants: event.max_participants,
-                currentParticipants: event.current_participants,
-                price: parseFloat(event.price),
-                isFree: event.is_free,
-                status: event.status,
-                spotsLeft: event.max_participants ? event.max_participants - event.current_participants : null,
-                registrations: registrations.map(r => ({
-                    id: r.id,
-                    userId: r.user_id,
-                    username: r.username,
-                    email: r.email,
-                    name: `${r.first_name} ${r.last_name}`,
-                    status: r.status,
-                    registeredAt: r.registered_at
-                }))
-            }
-        });
-    } catch (error) {
-        next(error);
+    if (!event) {
+      return res.status(404).json({ success: false, message: 'Event not found' });
     }
+
+    const [dates] = await db.execute(
+      `
+      SELECT DISTINCT event_date
+      FROM event_slots
+      WHERE event_id = ?
+      ORDER BY event_date ASC
+      `,
+      [id]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        ...event,
+        available_dates: dates.map(d => d.event_date)
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
 };
 
+
 /**
- * Create event (Admin only)
+ * Get slots for event by date
+ */
+const getEventSlotsByDate = async (req, res, next) => {
+  try {
+    const { id: eventId } = req.params;
+    const { date } = req.query;
+
+    if (!eventId) {
+      return res.status(400).json({
+        success: false,
+        message: "eventId is required",
+      });
+    }
+
+    if (!date) {
+      return res.status(400).json({
+        success: false,
+        message: "date is required",
+      });
+    }
+
+    const [slots] = await db.execute(
+      `
+      SELECT
+        id,
+        event_id,
+        event_date,
+        start_time,
+        end_time,
+        price,
+        total_seats,
+        booked_seats,
+        (total_seats - booked_seats) AS seats_left,
+        CASE
+          WHEN (total_seats - booked_seats) <= 0 THEN 'sold_out'
+          ELSE 'open'
+        END AS status
+      FROM event_slots
+      WHERE event_id = ?
+        AND DATE(event_date) = DATE(?)
+      ORDER BY start_time ASC
+      `,
+      [eventId, date]
+    );
+
+    res.json({
+      success: true,
+      data: slots,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+/**
+ * Create event + auto-generate slots (ADMIN)
  */
 const createEvent = async (req, res, next) => {
-    try {
-        const { title, description, category, imageUrl, date, startTime, endTime, 
-                location, maxParticipants, price, isFree } = req.body;
+  const conn = await db.getConnection();
 
-        const [result] = await db.execute(
-            `INSERT INTO events (title, description, category, image_url, event_date, 
-             start_time, end_time, location, max_participants, price, is_free, created_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [title, description, category || null, imageUrl || null, date, 
-             startTime, endTime || null, location || null, maxParticipants || null, 
-             isFree ? 0 : (price || 0), isFree !== false, req.user.id]
-        );
+  try {
+    const {
+      title,
+      description,
+      category,
+      image_url,
+      location,
+      price,
+      start_date,
+      end_date,
+      total_seats
+    } = req.body;
 
-        res.status(201).json({
-            success: true,
-            message: 'Event created successfully',
-            data: { id: result.insertId }
-        });
-    } catch (error) {
-        next(error);
+    await conn.beginTransaction();
+
+    // 1️⃣ Create event
+    const [eventResult] = await conn.execute(
+      `INSERT INTO events 
+       (title, description, category, image_url, location, price, status, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, 'upcoming', ?)`,
+      [title, description, category, image_url, location, price, req.user.id]
+    );
+
+    const eventId = eventResult.insertId;
+
+    // 2️⃣ Create DAYS (not slots)
+    // 2️⃣ Create TIME SLOTS per day (District-style)
+  const slotTimes = [
+    { start: "21:30:00", end: "22:45:00" },
+    { start: "22:45:00", end: "00:00:00" }
+  ];
+
+  const current = new Date(start_date);
+  const last = new Date(end_date);
+
+  while (current <= last) {
+    const dateStr = current.toISOString().slice(0, 10);
+
+    for (const slot of slotTimes) {
+      await conn.execute(
+        `INSERT INTO event_slots 
+        (event_id, event_date, start_time, end_time, total_seats, booked_seats, status)
+        VALUES (?, ?, ?, ?, ?, 0, 'open')`,
+        [
+          eventId,
+          dateStr,
+          slot.start,
+          slot.end,
+          total_seats
+        ]
+      );
     }
+
+    current.setDate(current.getDate() + 1);
+  }
+    await conn.commit();
+
+    res.status(201).json({
+      success: true,
+      message: 'Event created successfully',
+      eventId
+    });
+
+  } catch (err) {
+    await conn.rollback();
+    next(err);
+  } finally {
+    conn.release();
+  }
 };
 
-/**
- * Update event (Admin only)
- */
-const updateEvent = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        const { title, description, category, imageUrl, date, startTime, endTime, 
-                location, maxParticipants, price, isFree, status } = req.body;
+const bookEvent = async (req, res, next) => {
+  const conn = await db.getConnection();
 
-        const [result] = await db.execute(
-            `UPDATE events SET title = ?, description = ?, category = ?, image_url = ?,
-             event_date = ?, start_time = ?, end_time = ?, location = ?, 
-             max_participants = ?, price = ?, is_free = ?, status = ?
-             WHERE id = ?`,
-            [title, description, category, imageUrl, date, startTime, endTime, 
-             location, maxParticipants, isFree ? 0 : price, isFree, status || 'upcoming', id]
-        );
+  try {
+    const userId = req.user.id;          // from auth middleware
+    const { eventId, slotId, quantity } = req.body;
 
-        if (result.affectedRows === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Event not found'
-            });
-        }
-
-        res.json({
-            success: true,
-            message: 'Event updated successfully'
-        });
-    } catch (error) {
-        next(error);
+    if (quantity < 1 || quantity > 3) {
+      return res.status(400).json({
+        success: false,
+        message: "You can book max 3 tickets"
+      });
     }
+
+    await conn.beginTransaction();
+
+    /* 1️⃣ Check slot availability */
+    const [[slot]] = await conn.execute(
+      `SELECT total_seats, booked_seats, status
+       FROM event_slots
+       WHERE id = ? AND event_id = ? FOR UPDATE`,
+      [slotId, eventId]
+    );
+
+    if (!slot || slot.status === 'sold_out') {
+      throw new Error("Slot not available");
+    }
+
+    const seatsLeft = slot.total_seats - slot.booked_seats;
+
+    if (seatsLeft < quantity) {
+      throw new Error("Not enough seats available");
+    }
+
+    /* 2️⃣ Check user limit (max 3 per event) */
+    const [[userBooking]] = await conn.execute(
+      `SELECT COALESCE(SUM(quantity),0) AS booked
+       FROM event_bookings
+       WHERE user_id = ? AND event_id = ? AND status = 'confirmed'`,
+      [userId, eventId]
+    );
+
+    if (userBooking.booked + quantity > 3) {
+      throw new Error("Max 3 tickets allowed per user");
+    }
+
+    /* 3️⃣ Insert booking */
+    await conn.execute(
+      `INSERT INTO event_bookings (user_id, event_id, slot_id, quantity, status)
+       VALUES (?, ?, ?, ?, 'confirmed')`,
+      [userId, eventId, slotId, quantity]
+    );
+
+    /* 4️⃣ Update seats */
+    await conn.execute(
+      `UPDATE event_slots
+       SET booked_seats = booked_seats + ?
+       WHERE id = ?`,
+      [quantity, slotId]
+    );
+
+    /* 5️⃣ Auto sold-out */
+    await conn.execute(
+      `UPDATE event_slots
+       SET status = 'sold_out'
+       WHERE id = ? AND booked_seats >= total_seats`,
+      [slotId]
+    );
+
+    await conn.commit();
+
+    res.json({
+      success: true,
+      message: "Booking confirmed"
+    });
+
+  } catch (err) {
+    await conn.rollback();
+    res.status(400).json({
+      success: false,
+      message: err.message
+    });
+  } finally {
+    conn.release();
+  }
 };
 
-/**
- * Delete event (Admin only)
- */
-const deleteEvent = async (req, res, next) => {
-    try {
-        const { id } = req.params;
+const getMyEventBookings = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
 
-        // Check for registrations
-        const [registrations] = await db.execute(
-            `SELECT COUNT(*) as count FROM event_registrations WHERE event_id = ? AND status = 'registered'`,
-            [id]
-        );
+    const [rows] = await db.execute(`
+      SELECT 
+        eb.id,
+        e.title,
+        e.location,
+        es.event_date,
+        es.start_time,
+        es.end_time,
+        eb.quantity,
+        es.price,
+        (eb.quantity * es.price) AS total_amount
+      FROM event_bookings eb
+      JOIN events e ON eb.event_id = e.id
+      JOIN event_slots es ON eb.slot_id = es.id
+      WHERE eb.user_id = ?
+      ORDER BY es.event_date DESC
+    `, [userId]);
 
-        if (registrations[0].count > 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'Cannot delete event with active registrations. Cancel it instead.'
-            });
-        }
-
-        const [result] = await db.execute('DELETE FROM events WHERE id = ?', [id]);
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Event not found'
-            });
-        }
-
-        res.json({
-            success: true,
-            message: 'Event deleted successfully'
-        });
-    } catch (error) {
-        next(error);
-    }
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    next(err);
+  }
 };
 
-/**
- * Register for an event
- */
-const registerForEvent = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        const userId = req.user.id;
-
-        // Get event
-        const [events] = await db.execute(
-            'SELECT * FROM events WHERE id = ? AND status = ?',
-            [id, 'upcoming']
-        );
-
-        if (events.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Event not found or not available for registration'
-            });
-        }
-
-        const event = events[0];
-
-        // Check capacity
-        if (event.max_participants && event.current_participants >= event.max_participants) {
-            return res.status(400).json({
-                success: false,
-                message: 'Event is full'
-            });
-        }
-
-        // Check if already registered
-        const [existing] = await db.execute(
-            `SELECT id FROM event_registrations WHERE event_id = ? AND user_id = ?`,
-            [id, userId]
-        );
-
-        if (existing.length > 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'Already registered for this event'
-            });
-        }
-
-        // Register
-        await db.execute(
-            `INSERT INTO event_registrations (event_id, user_id) VALUES (?, ?)`,
-            [id, userId]
-        );
-
-        // Update participant count
-        await db.execute(
-            'UPDATE events SET current_participants = current_participants + 1 WHERE id = ?',
-            [id]
-        );
-
-        res.status(201).json({
-            success: true,
-            message: 'Successfully registered for event',
-            data: {
-                eventTitle: event.title,
-                eventDate: event.event_date,
-                startTime: event.start_time
-            }
-        });
-    } catch (error) {
-        next(error);
-    }
-};
-
-/**
- * Unregister from an event
- */
-const unregisterFromEvent = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        const userId = req.user.id;
-
-        // Check registration
-        const [registrations] = await db.execute(
-            `SELECT id FROM event_registrations WHERE event_id = ? AND user_id = ? AND status = 'registered'`,
-            [id, userId]
-        );
-
-        if (registrations.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Registration not found'
-            });
-        }
-
-        // Update status to cancelled
-        await db.execute(
-            `UPDATE event_registrations SET status = 'cancelled' WHERE event_id = ? AND user_id = ?`,
-            [id, userId]
-        );
-
-        // Update participant count
-        await db.execute(
-            'UPDATE events SET current_participants = GREATEST(current_participants - 1, 0) WHERE id = ?',
-            [id]
-        );
-
-        res.json({
-            success: true,
-            message: 'Successfully unregistered from event'
-        });
-    } catch (error) {
-        next(error);
-    }
-};
 
 module.exports = {
-    getAllEvents,
-    getEventById,
-    createEvent,
-    updateEvent,
-    deleteEvent,
-    registerForEvent,
-    unregisterFromEvent
+  getAllEvents,
+  getEventById,
+  getEventSlotsByDate,
+  createEvent,
+  bookEvent,
+  getMyEventBookings
 };
