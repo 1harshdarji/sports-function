@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Layout } from "@/components/Layout";
-import { Card } from "@/components/ui/card";
 import { ChevronLeft } from "lucide-react";
 
 /**
@@ -11,146 +9,161 @@ import { ChevronLeft } from "lucide-react";
  */
 
 const Grounds = () => {
-  // gets sport key from URL (gym, tennis, football etc.)
   const { sportKey } = useParams();
   const navigate = useNavigate();
 
-  // stores all grounds of selected sport
   const [grounds, setGrounds] = useState<any[]>([]);
 
-  // fetch facilities from backend
+  // Fetch facilities from backend
   useEffect(() => {
     axios
       .get("http://localhost:5000/api/facilities")
       .then((res) => {
         const all = res.data.data || [];
-
-        // filter only grounds of selected sport
-        
-        const sportToCategoryMap: any = {
-            football: "turf",
-            cricket: "turf",
-            badminton: "badminton",
-            tennis: "court",
-            gym: "gym",
-            swimming: "pool",
-            yoga: "studio",
-            wrestling: "ring"
-        };
-
         const filtered = all.filter(
-            (f: any) => f.sportKey === sportKey//(f: any) => f.category === sportToCategoryMap[sportKey as string]
+          (f: any) => f.sportKey === sportKey
         );
-
         setGrounds(filtered);
       })
-      .catch((err) => console.error(err));
+      .catch(console.error);
   }, [sportKey]);
 
   return (
-    <Layout>
-      <section className="py-10 bg-background">
-        <div className="container mx-auto px-2"> {/* change size of card*/}
+    <div className="min-h-screen bg-background">
+      <section className="py-12">
+        <div className="container mx-auto px-4 max-w-6xl">
 
-          {/* BACK BUTTON */}
+          {/* Back Button */}
           <button
             onClick={() => navigate("/facilities")}
-            className="flex items-center gap-2 text-sm mb-6 text-muted-foreground hover:text-primary"
+            className="group flex items-center gap-2 text-sm mb-8 text-muted-foreground hover:text-foreground transition-colors"
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
             Back to Sports
           </button>
 
-          {/* PAGE TITLE */}
-          <h1 className="text-2xl font-semibold mb-8 capitalize">
-            {sportKey}
+          {/* Page Title */}
+          <h1 className="text-4xl font-bold mb-12 capitalize tracking-tight">
+            {sportKey}{" "}
+            <span className="text-muted-foreground font-normal">
+              Grounds
+            </span>
           </h1>
-            {/* GROUNDS STRIP LIST */}
-            <div className="space-y-6">
-              {grounds.map((ground) => (
-                <div
-                key={ground.id}
-                    onClick={() => navigate(`/booking/${ground.id}`)}
-                    className="
-                        relative
-                        h-52
-                        rounded-2xl
-                        overflow-hidden
-                        cursor-pointer
-                        shadow-lg
-                        hover:shadow-2xl
-                        transition-all
-                        group
-                "
-                >
 
-                {/* FULL WIDTH IMAGE */}
+          {/* Grounds Grid */}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-1">
+            {grounds.map((ground) => (
+              <div
+                key={ground.id}
+                onClick={() => navigate(`/booking/${ground.id}`)}
+                className="
+                  group
+                  relative
+                  h-80
+                  rounded-2xl
+                  overflow-hidden
+                  cursor-pointer
+                  border
+                  border-border/50
+                  hover:border-primary/50
+                  transition-all
+                  duration-500
+                "
+              >
+                {/* Image */}
                 <img
-                    src={
-                        ground.imageUrl ||
-                        "https://images.unsplash.com/photo-1521412644187-c49fa049e84d"
-                    }
-                    alt={ground.name}
-                    className="
-                        h-full
-                        w-full
-                        object-cover
-                        transition-transform
-                        duration-300
-                        group-hover:scale-105
-                    "
+                  src={
+                    ground.imageUrl ||
+                    "https://images.unsplash.com/photo-1521412644187-c49fa049e84d"
+                  }
+                  alt={ground.name}
+                  className="
+                    h-full
+                    w-full
+                    object-cover
+                    transition-transform
+                    duration-700
+                    group-hover:scale-105
+                  "
                 />
 
-                {/* DARK OVERLAY – appears on hover */}
+                {/* Gradient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+
+                {/* Always Visible Title */}
+                <div className="absolute bottom-0 left-0 right-0 p-6 z-10">
+                  <h3 className="text-2xl font-semibold text-white tracking-tight transition-transform duration-500 group-hover:-translate-y-20">
+                    {ground.name}
+                  </h3>
+                </div>
+
+                {/* Hover Details */}
                 <div
-                    className="
-                        absolute inset-0
-                        bg-black/60
-                        opacity-0
-                        group-hover:opacity-100
-                        transition-opacity
-                        duration-300
-                        flex
-                        items-center
-                    "
+                  className="
+                    absolute
+                    bottom-0
+                    left-0
+                    right-0
+                    p-6
+                    translate-y-full
+                    group-hover:translate-y-0
+                    transition-transform
+                    duration-500
+                    ease-out
+                    z-10
+                  "
                 >
-                    {/* DETAILS ON HOVER */}
-                    <div className="px-6 text-white">
-                        <h3 className="text-xl font-semibold mb-1">
-                            {ground.name}
-                        </h3>
+                  {/* Price */}
+                  <p className="text-lg font-medium text-white/90 mb-3">
+                    ₹{ground.pricePerHour}
+                    <span className="text-sm text-white/60"> / hour</span>
+                  </p>
 
-                    <p className="text-sm mb-2">
-                        ₹{ground.pricePerHour}/hour
-                    </p>
+                  {/* Amenities */}
+                  <div className="flex flex-wrap gap-2">
+                    {ground.amenities?.slice(0, 3).map((a: string, i: number) => (
+                      <span
+                        key={i}
+                        className="
+                          text-xs
+                          bg-white/15
+                          backdrop-blur
+                          px-3
+                          py-1.5
+                          rounded-full
+                          text-white/90
+                          border
+                          border-white/10
+                        "
+                      >
+                        {a}
+                      </span>
+                    ))}
+                    {ground.amenities?.length > 3 && (
+                      <span className="text-xs bg-white/15 px-3 py-1.5 rounded-full text-white/90">
+                        +{ground.amenities.length - 3}
+                      </span>
+                    )}
+                  </div>
+                </div>
 
-                    {/* AMENITIES */}
-                    <div className="flex flex-wrap gap-2">
-                        {ground.amenities?.map((a: string, i: number) => (
-                        <span
-                            key={i}
-                            className="text-xs bg-white/20 px-2 py-1 rounded-full"
-                        >
-                            {a}
-                        </span>
-                        ))}
-                    </div>
-                    </div>
-                </div>
-                </div>
+                {/* Corner Accent */}
+                <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-primary opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              </div>
             ))}
-        </div>
+          </div>
 
-
-          {/* EMPTY STATE */}
+          {/* Empty State */}
           {grounds.length === 0 && (
-            <p className="text-muted-foreground mt-10">
-              No grounds available for this sport.
-            </p>
+            <div className="text-center py-20">
+              <p className="text-muted-foreground text-lg">
+                No grounds available for this sport.
+              </p>
+            </div>
           )}
         </div>
       </section>
-    </Layout>
+    </div>
   );
 };
 
