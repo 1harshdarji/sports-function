@@ -100,6 +100,14 @@ const Booking = () => {
       })
       .catch(console.error);
   }, [facilityId, selectedDate]);
+  /* ================= RESET SLOT ON DATE CHANGE ================= */
+  useEffect(() => {
+    // 🔥 VERY IMPORTANT
+    // When date changes, previously selected slot
+    // must NOT be reused (prevents next-week greying bug)
+    setSelectedSlot(null);
+  }, [selectedDate]);
+
 
   /* ================= RESTORE PENDING BOOKING ================= */
   useEffect(() => {
@@ -313,12 +321,14 @@ const Booking = () => {
                 <label className="text-sm font-medium">Select Time</label>
                 <div className="grid grid-cols-4 gap-2">
                     {slots.map((slot) => {
-                      const isDisabled = !slot.isAvailable;
+                      //const isDisabled = !slot.isAvailable;
+                      const isDisabled = !slot.isAvailable || slot.isBooked;
                       const isSelected = selectedSlot?.id === slot.id;
 
                       return (
                         <button
-                          key={slot.id}
+                          //key={slot.id}
+                          key={`${toYMD(selectedDate)}-${slot.startTime}-${slot.endTime}`}
                           disabled={isDisabled}
                           onClick={() => !isDisabled && setSelectedSlot(slot)}
                           className={`
@@ -363,7 +373,11 @@ const Booking = () => {
                   <div className="flex justify-between">
                     <span>Date</span>
                     <span>
-                      {formatBookingDate(toYMD(selectedDate))}
+                      {`${selectedDate.getDate()} ${selectedDate.toLocaleDateString("en-IN", {
+                        weekday: "long",
+                      })}, ${selectedDate.toLocaleDateString("en-IN", {
+                        month: "short",
+                      })}`}
                     </span>
                   </div>
 

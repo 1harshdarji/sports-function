@@ -43,8 +43,12 @@ const getAllUsers = async (req, res, next) => {
         const total = countResult[0].total;
 
         // Add pagination
-        query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
-        params.push(parseInt(limit), parseInt(offset));
+        //query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+        //params.push(parseInt(limit), parseInt(offset));
+        // Add pagination (SAFE numeric injection)
+        query += ` ORDER BY created_at DESC LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}`;
+
+
 
         const [users] = await db.execute(query, params);
 
@@ -254,10 +258,82 @@ const changeUserRole = async (req, res, next) => {
     }
 };
 
+/**
+ * Get bookings of a specific user (Admin only)
+ */
+const getUserBookings = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const [rows] = await db.execute(
+      `
+      SELECT 
+        b.id,
+        b.booking_date,
+        b.start_time,
+        b.end_time,
+        b.status,
+        f.name AS facility_name
+      FROM bookings b
+      JOIN facilities f ON b.facility_id = f.id
+      WHERE b.user_id = ?
+      ORDER BY b.booking_date DESC
+      `,
+      [id]
+    );
+
+    res.json({
+      success: true,
+      data: rows
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Disable user (Soft delete)
+ * Admin only
+ */
+const disableUser = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // Prevent admin disabling himself
+    if (parseInt(id) === req.user.id) {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot disable your own account",
+      });
+    }
+
+    const [result] = await db.execute(
+      "UPDATE users SET is_active = 0 WHERE id = ?",
+      [id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "User disabled successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
     getAllUsers,
     getUserById,
     updateUser,
     deleteUser,
-    changeUserRole
+    changeUserRole,
+    getUserBookings,
+    disableUser
 };

@@ -363,23 +363,24 @@ if (loading) {
                           </div>
 
                           <div>
-                            <h4 className="font-semibold capitalize">
-                              {booking.facility?.category || "Sport"}
-                            </h4>
-
-                            <p className="text-sm font-medium">
+                            <h4 className="font-semibold text-base">
                               {booking.facility?.name ?? "Unknown Facility"}
-                            </p>
+                              {" | "}
+                              <span className="capitalize text-muted-foreground">
+                                {booking.facility?.sportKey}
+                              </span>
+                            </h4>
 
                             <p className="text-xs text-muted-foreground mb-1">
                               {booking.facility?.location || "Location not available"}
                             </p>
 
                             <p className="text-sm text-muted-foreground">
-                              {booking.date
+                               {booking.date
                                 ? formatBookingDate(booking.date)
                                 : "Date N/A"}{" "}
-                              | {booking.startTime} – {booking.endTime}
+                              | {formatTime12h(booking.startTime)} –{" "}
+                              {formatTime12h(booking.endTime)}
                             </p>
                           </div>
                         </div>

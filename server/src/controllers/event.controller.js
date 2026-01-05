@@ -142,9 +142,9 @@ const getEventSlotsByDate = async (req, res, next) => {
 };
 
 
-/**
+/**============================================
  * Create event + auto-generate slots (ADMIN)
- */
+ =============================================*/
 const createEvent = async (req, res, next) => {
   const conn = await db.getConnection();
 
@@ -218,7 +218,9 @@ const createEvent = async (req, res, next) => {
     conn.release();
   }
 };
-
+/**============================================
+ *               BOOK EVENT
+ =============================================*/
 const bookEvent = async (req, res, next) => {
   const conn = await db.getConnection();
 
@@ -256,8 +258,11 @@ const bookEvent = async (req, res, next) => {
     /* 2️⃣ Check user limit (max 3 per event) */
     const [[userBooking]] = await conn.execute(
       `SELECT COALESCE(SUM(quantity),0) AS booked
-       FROM event_bookings
-       WHERE user_id = ? AND event_id = ? AND status = 'confirmed'`,
+        FROM event_bookings
+        WHERE user_id = ?
+          AND event_id = ?
+          AND slot_id = ?
+          AND status IN ('pending','confirmed')`,
       [userId, eventId]
     );
 

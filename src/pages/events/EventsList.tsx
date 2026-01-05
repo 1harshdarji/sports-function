@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Layout } from "@/components/Layout";
-import { MapPin, Calendar } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import EventCard from "./EventCard";
+import { Search, SlidersHorizontal } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
+
+/* ================= TYPES ================= */
 interface EventItem {
   id: number;
   title: string;
@@ -11,114 +14,142 @@ interface EventItem {
   image_url: string;
   location: string;
   price: number;
-  max_participants: number;
-  current_participants: number;
   event_date: string;
   start_time?: string;
 }
 
-const formatFirstDate = (date?: string, time?: string) => {
-  if (!date || !time) return "Date TBA";
+/* ================= FILTERS (UI SAME) ================= */
+const filters = [
+  "All",
+  "Music",
+  "Comedy",
+  "Festival",
+  "Food & Drinks",
+  "Theatre",
+];
 
-  const d = new Date(`${date}T${time}`);
-  if (isNaN(d.getTime())) return "Date TBA";
-
-  return d.toLocaleDateString("en-IN", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  }) + ", " +
-  d.toLocaleTimeString("en-IN", {
-    hour: "numeric",
-    minute: "2-digit",
-  });
-};
-
-
-
+/* ================= COMPONENT ================= */
 const EventsList = () => {
-  const navigate = useNavigate();
+  /* ---------- STATE ---------- */
   const [events, setEvents] = useState<EventItem[]>([]);
+  const [activeFilter, setActiveFilter] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
+  /* ================= FETCH EVENTS (LOGIC FROM 2nd CODE) ================= */
   useEffect(() => {
     axios
       .get("http://localhost:5000/api/events")
-      .then((res) => setEvents(res.data.data || []))
+      .then((res) => {
+        setEvents(res.data.data || []);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
 
+  /* ================= FILTER + SEARCH (UI SAME) ================= */
+  const filteredEvents = events.filter((event) => {
+    const matchesFilter =
+      activeFilter === "All" || event.category === activeFilter;
+
+    const matchesSearch =
+      event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      event.location.toLowerCase().includes(searchQuery.toLowerCase());
+
+    return matchesFilter && matchesSearch;
+  });
+
+  /* ================= LOADING STATE ================= */
   if (loading) {
     return (
-      <Layout>
-        <div className="container mx-auto px-4 py-20 text-center">
+      <section className="py-12 bg-secondary/30">
+        <div className="container mx-auto px-4 text-center">
           Loading events...
         </div>
-      </Layout>
+      </section>
     );
   }
 
+  /* ================= UI (100% SAME AS FIRST CODE) ================= */
   return (
-    
-      <div className="container mx-auto px-4 py-10">
-        <h1 className="text-2xl font-semibold mb-6">Explore Events</h1>
+    <section className="py-12 bg-secondary/30">
+      <div className="container mx-auto px-4">
 
-        {events.length === 0 && (
-          <p className="text-muted-foreground">No events available</p>
+        {/* ================= HEADER ================= */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground">
+            Upcoming Events
+          </h2>
+
+          {/* ---------- SEARCH ---------- */}
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 md:w-80">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search events..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 bg-card border-border"
+              />
+            </div>
+            <Button variant="outline" size="icon" className="shrink-0">
+              <SlidersHorizontal className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* ================= FILTER PILLS ================= */}
+        <div className="flex gap-2 overflow-x-auto pb-4 mb-6 scrollbar-hide">
+          {filters.map((filter) => (
+            <button
+              key={filter}
+              onClick={() => setActiveFilter(filter)}
+              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                activeFilter === filter
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-card text-foreground hover:bg-muted"
+              }`}
+            >
+              {filter}
+            </button>
+          ))}
+        </div>
+
+        {/* ================= EVENTS GRID ================= */}
+        {filteredEvents.length === 0 ? (
+          <div className="text-center py-16">
+            <p className="text-muted-foreground text-lg">
+              No events found
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Try adjusting your search or filters
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {filteredEvents.map((event) => (
+              <EventCard
+                key={event.id}
+                {...event}
+              />
+            ))}
+          </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {events.map((event) => {
-            
-            return (
-              <div
-                key={event.id}
-                onClick={() => navigate(`/events/${event.id}`)}
-                className="cursor-pointer rounded-xl overflow-hidden border bg-white hover:shadow-xl transition"
-              >
-                {/* IMAGE */}
-                <div className="relative aspect-[3/4] w-full bg-gray-100 overflow-hidden">
-                  <img
-                    src={event.image_url}
-                    alt={event.title}
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                </div>
-
-                {/* CONTENT */}
-                <div className="p-4 space-y-2">
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                    {event.category}
-                  </p>
-
-                  <h3 className="font-semibold text-lg leading-snug">
-                    {event.title}
-                  </h3>
-
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <MapPin className="w-4 h-4" />
-                    <span>{event.location}</span>
-                  </div>
-
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="w-4 h-4" />
-                    <span>
-                      {formatFirstDate(event.event_date, event.start_time)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between pt-3">
-                    <span className="font-semibold">
-                      ₹{event.price} onwards
-                    </span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        {/* ================= LOAD MORE (UI ONLY) ================= */}
+        {filteredEvents.length > 0 && (
+          <div className="text-center mt-10">
+            <Button
+              variant="outline"
+              size="lg"
+              className="rounded-full px-8"
+            >
+              Load More Events
+            </Button>
+          </div>
+        )}
       </div>
-    
+    </section>
   );
 };
 

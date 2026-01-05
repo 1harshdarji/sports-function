@@ -206,40 +206,75 @@ const getAvailableSlots = async (req, res, next) => {
             });
         }
 
-            // DO NOT use new Date(date) — it causes UTC shift
-            const [year, month, day] = date.split("-").map(Number);
+        // DO NOT use new Date(date) — it causes UTC shift
+        const [year, month, day] = date.split("-").map(Number);
 
-            // Create LOCAL date (NO timezone conversion)
-            const bookingDate = new Date(year, month - 1, day);
+        // Create LOCAL date (NO timezone conversion)
+        const bookingDate = new Date(year, month - 1, day);
 
-            // JS: 0=Sunday, 1=Monday ... 6=Saturday
-            const jsDay = bookingDate.getDay();
+        // JS: 0=Sunday, 1=Monday ... 6=Saturday
+        const jsDay = bookingDate.getDay();
 
-            // DB: 1=Monday ... 7=Sunday
-            const dayOfWeek = jsDay === 0 ? 7 : jsDay;
+        // DB: 1=Monday ... 7=Sunday
+        const dayOfWeek = jsDay === 0 ? 7 : jsDay;
 
-        // Get all slots for this day
+        // Get all slots for this weekday (DO NOT filter by availability)
+        // AND is_available = TRUE (INTENTIONALLY REMOVED)
         const [slots] = await db.execute(
-            `SELECT * FROM facility_slots 
-             WHERE facility_id = ? AND day_of_week = ? AND is_available = TRUE`,
-            [id, dayOfWeek]
+        `
+        SELECT * FROM facility_slots
+        WHERE facility_id = ?
+            AND day_of_week = ?
+            AND (
+            start_date IS NULL OR start_date <= ?
+            )
+            AND (
+            end_date IS NULL OR end_date >= ?
+            )
+        `,
+        [id, dayOfWeek, date, date]
         );
 
-        /* Get already booked slots
+
+        // const availableSlots = slots;
+
+        /* ================= OLD LOGIC (KEPT FOR REFERENCE) =================
         const [bookedSlots] = await db.execute(
             `SELECT start_time, end_time FROM bookings 
              WHERE facility_id = ? AND booking_date = ? AND status IN ('pending', 'confirmed')`,
             [id, date]
         );
 
-        // Filter out booked slots
         const availableSlots = slots.filter(slot => {
             return !bookedSlots.some(booked => 
                 slot.start_time === booked.start_time && slot.end_time === booked.end_time
             );
-        });*/
-        const availableSlots = slots;
+        });
+        =================================================================== */
 
+        // 🔹 Get booked slots for THIS DATE only (UI purpose)
+        const [bookedSlots] = await db.execute(
+            `SELECT start_time, end_time FROM bookings
+             WHERE facility_id = ?
+             AND booking_date = ?
+             AND status IN ('pending', 'confirmed')`,
+            [id, date]
+        );
+
+        // 🔹 Mark booked slots (do NOT remove them)
+        const slotsWithBookingStatus = slots.map(slot => {
+            const isBooked = bookedSlots.some(b =>
+                b.start_time === slot.start_time &&
+                b.end_time === slot.end_time
+            );
+
+            return {
+                ...slot,
+                isBooked, // 👈 UI-only flag
+            };
+        });
+
+        /* ================= OLD RESPONSE (KEPT) =================
         res.json({
             success: true,
             data: {
@@ -252,6 +287,23 @@ const getAvailableSlots = async (req, res, next) => {
                 }))
             }
         });
+        ======================================================== */
+
+        // ✅ FINAL RESPONSE (USED)
+        res.json({
+            success: true,
+            data: {
+                date,
+                slots: slotsWithBookingStatus.map(s => ({
+                    id: s.id,
+                    startTime: s.start_time,
+                    endTime: s.end_time,
+                    isAvailable: s.is_available, // DB flag (admin controlled)
+                    isBooked: s.isBooked          // UI-only flag (date specific)
+                }))
+            }
+        });
+
     } catch (error) {
         next(error);
     }

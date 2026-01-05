@@ -1,3 +1,5 @@
+import axios from "axios";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,14 +32,14 @@ const handleAdminLogout = () => {
 };
 
 /* =========================
-   Static Dashboard Data
+   Static Dashboard Data (KEPT FOR FUTURE)
 ========================= */
-const stats = [
-  { label: "Total Members", value: "5,234", change: "+12%", trend: "up", icon: Users },
-  { label: "Active Bookings", value: "142", change: "+8%", trend: "up", icon: Calendar },
-  { label: "Monthly Revenue", value: "$87,430", change: "+23%", trend: "up", icon: DollarSign },
-  { label: "Attendance Rate", value: "89%", change: "-2%", trend: "down", icon: TrendingUp },
-];
+// const stats = [
+//   { label: "Total Members", value: "5,234", change: "+12%", trend: "up", icon: Users },
+//   { label: "Active Bookings", value: "142", change: "+8%", trend: "up", icon: Calendar },
+//   { label: "Monthly Revenue", value: "$87,430", change: "+23%", trend: "up", icon: DollarSign },
+//   { label: "Attendance Rate", value: "89%", change: "-2%", trend: "down", icon: TrendingUp },
+// ];
 
 const recentMembers = [
   { name: "Sarah Johnson", email: "sarah@example.com", plan: "Premium", joined: "Today" },
@@ -67,11 +69,141 @@ const sidebarLinks = [
 const AdminDashboard = () => {
   const location = useLocation();
 
+  /* ---------- STATE ---------- */
+  const [view, setView] = useState<"dashboard" | "members" | "activeBookings">("dashboard");
+  const [users, setUsers] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [userDetails, setUserDetails] = useState<any>(null);
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  
+
+
+  const [dashboardStats, setDashboardStats] = useState({
+    totalMembers: 0,
+    activeBookings: 0,
+    recentMembers: [],
+    todaysBookings: [],
+  });
+
+  const [dashboard, setDashboard] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [userBookings, setUserBookings] = useState<any[]>([]);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+/* =========================
+   FETCH USER DETAILS
+========================= */
+  const fetchUserDetails = async (id: number) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const [userRes, bookingRes] = await Promise.all([
+        axios.get(`http://localhost:5000/api/users/${id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get(`http://localhost:5000/api/users/${id}/bookings`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      ]);
+
+      setSelectedUser(userRes.data.data);
+      setUserBookings(bookingRes.data.data);
+      setIsDrawerOpen(true);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+
+  /* ---------- FETCH DASHBOARD ---------- */
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        const token = localStorage.getItem("token");
+
+        const res = await axios.get(
+          "http://localhost:5000/api/admin/dashboard",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        setDashboard(res.data.data);
+
+        setDashboardStats({
+          totalMembers: res.data.data.totalMembers,
+          activeBookings: res.data.data.activeBookings,
+          recentMembers: res.data.data.recentMembers || [],
+          todaysBookings: res.data.data.todaysBookings || [],
+        });
+      } catch (err) {
+        console.error("Dashboard error", err);
+      }
+    };
+
+    fetchDashboard();
+  }, []);
+
+
+/* -------- MEMBERS FETCH -------- */
+
+const fetchUsers = async () => {
+  try {
+    setLoadingUsers(true);
+    const token = localStorage.getItem("token");
+
+    const res = await axios.get("http://localhost:5000/api/users", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    setUsers(res.data.data.users || []);
+  } catch (err) {
+    console.error("Users fetch error", err);
+  } finally {
+    setLoadingUsers(false);
+  }
+};
+
+/* -------- FETCH ON VIEW CHANGE -------- */
+
+useEffect(() => {
+  if (view !== "members") return;
+  fetchUsers();
+}, [view]);
+
+/* -------- SOFT DELETE (DISABLE USER) -------- */
+
+const disableUser = async (id: number) => {
+  try {
+    const token = localStorage.getItem("token");
+
+    await axios.put(
+      `http://localhost:5000/api/users/${id}/disable`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    fetchUsers(); // ✅ refresh list after disable
+  } catch (err) {
+    console.error("Disable user error", err);
+  }
+};
+
+
+
   return (
     <div className="min-h-screen bg-background flex">
       {/* ================= Sidebar ================= */}
       <aside className="hidden lg:flex flex-col w-64 border-r bg-card">
-        {/* Logo */}
         <div className="p-6 border-b">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg gradient-hero flex items-center justify-center">
@@ -81,7 +213,6 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 p-4">
           <ul className="space-y-1">
             {sidebarLinks.map((link, i) => (
@@ -102,7 +233,6 @@ const AdminDashboard = () => {
           </ul>
         </nav>
 
-        {/* Admin Footer */}
         <div className="p-4 border-t">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
@@ -114,19 +244,14 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          <Button
-            variant="destructive"
-            className="w-full"
-            onClick={handleAdminLogout}
-          >
+          <Button variant="destructive" className="w-full" onClick={handleAdminLogout}>
             Logout
           </Button>
         </div>
       </aside>
 
-      {/* ================= Main Content ================= */}
+      {/* ================= Main ================= */}
       <div className="flex-1 flex flex-col">
-        {/* Header */}
         <header className="h-16 border-b bg-card flex items-center justify-between px-6">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" className="lg:hidden">
@@ -142,33 +267,48 @@ const AdminDashboard = () => {
           </Button>
         </header>
 
-        {/* Dashboard */}
         <main className="flex-1 p-6 overflow-auto">
           <h1 className="text-2xl font-bold mb-1">Dashboard</h1>
           <p className="text-muted-foreground mb-6">
             Welcome back! Here's what's happening today.
           </p>
 
-          {/* Stats */}
+          {/* ================= STATS ================= */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            {stats.map((stat, i) => (
-              <Card key={i}>
+            {[
+              {
+                label: "Total Members",
+                value: dashboardStats.totalMembers,
+                key: "members",
+                icon: Users,
+                trend: "up",
+                change: "",
+              },
+              {
+                label: "Active Bookings",
+                value: dashboardStats.activeBookings,
+                key: "bookings",
+                icon: Calendar,
+                trend: "up",
+                change: "",
+              },
+            ].map((stat, i) => (
+              <Card
+                key={i}
+                className="cursor-pointer"
+                onClick={() => {
+                  if (stat.key === "members") setView("members");
+                  if (stat.key === "bookings") setView("activeBookings");
+                }}
+              >
                 <CardContent className="p-5">
                   <div className="flex justify-between mb-3">
                     <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                       <stat.icon className="w-5 h-5 text-primary" />
                     </div>
-                    <span
-                      className={`text-sm flex items-center gap-1 ${
-                        stat.trend === "up" ? "text-accent" : "text-destructive"
-                      }`}
-                    >
+                    <span className="text-sm flex items-center gap-1 text-accent">
                       {stat.change}
-                      {stat.trend === "up" ? (
-                        <ArrowUpRight className="w-3 h-3" />
-                      ) : (
-                        <ArrowDownRight className="w-3 h-3" />
-                      )}
+                      <ArrowUpRight className="w-3 h-3" />
                     </span>
                   </div>
                   <p className="text-2xl font-bold">{stat.value}</p>
@@ -178,7 +318,73 @@ const AdminDashboard = () => {
             ))}
           </div>
 
-          {/* Members + Bookings */}
+          {/* ================= MEMBERS TABLE ================= */}
+            {view === "members" && (
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle>All Members</CardTitle>
+                </CardHeader>
+
+                <CardContent>
+                  {loadingUsers ? (
+                    <p className="text-muted-foreground">Loading members...</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="border-b">
+                          <tr className="text-left">
+                            <th className="py-2">Username</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th className="text-right">Actions</th>
+                          </tr>
+                        </thead>
+
+                        <tbody>
+                          {users.map((u) => (
+                            <tr key={u.id} className="border-b hover:bg-muted/50">
+                              <td className="py-2 font-medium">{u.username}</td>
+                              <td>{u.firstName} {u.lastName}</td>
+                              <td>{u.email}</td>
+                              <td>{u.phone || "-"}</td>
+                              <td>
+                                <Badge variant="outline">{u.role}</Badge>
+                              </td>
+                              <td>
+                                <Badge variant={u.isActive ? "default" : "secondary"}>
+                                  {u.isActive ? "Active" : "Inactive"}
+                                </Badge>
+                              </td>
+                              <td className="text-right space-x-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => fetchUserDetails(u.id)}
+                                  >
+                                    View
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => disableUser(u.id)}
+                                  >
+                                    Disable
+                                  </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+          {/* ================= RECENT ================= */}
           <div className="grid lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
@@ -208,9 +414,7 @@ const AdminDashboard = () => {
                       <p className="font-medium text-sm">{b.member}</p>
                       <p className="text-xs text-muted-foreground">{b.facility}</p>
                     </div>
-                    <Badge
-                      variant={b.status === "confirmed" ? "default" : "secondary"}
-                    >
+                    <Badge variant={b.status === "confirmed" ? "default" : "secondary"}>
                       {b.status}
                     </Badge>
                   </div>
@@ -218,6 +422,117 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
           </div>
+          {isUserModalOpen && userDetails && (
+            <div className="fixed inset-0 bg-black/40 z-50 flex justify-end">
+              <div className="w-full sm:w-[420px] bg-background h-full p-6 overflow-auto">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold">User Details</h2>
+                  <button
+                    className="text-muted-foreground"
+                    onClick={() => setIsUserModalOpen(false)}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* User Info */}
+                <div className="space-y-2 mb-6">
+                  <p><b>Username:</b> {userDetails.username}</p>
+                  <p><b>Name:</b> {userDetails.firstName} {userDetails.lastName}</p>
+                  <p><b>Email:</b> {userDetails.email}</p>
+                  <p><b>Phone:</b> {userDetails.phone || "-"}</p>
+                  <p><b>Role:</b> {userDetails.role}</p>
+                  <p><b>Status:</b> {userDetails.isActive ? "Active" : "Inactive"}</p>
+                </div>
+
+                {/* Membership */}
+                <div className="mb-6">
+                  <h3 className="font-semibold mb-2">Membership</h3>
+                  {userDetails.membership ? (
+                    <div className="space-y-1">
+                      <p><b>Plan:</b> {userDetails.membership.plan_name}</p>
+                      <p><b>Status:</b> {userDetails.membership.status}</p>
+                      <p><b>Start:</b> {userDetails.membership.start_date}</p>
+                      <p><b>End:</b> {userDetails.membership.end_date}</p>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground">No membership</p>
+                  )}
+                </div>
+                <h3 className="mt-6 mb-2 font-semibold text-lg">Bookings</h3>
+
+                {/* =========================
+                    USER BOOKINGS SECTION
+                ========================= */}
+                  {userBookings.length === 0 ? (
+                    <p className="text-muted-foreground">No bookings found</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {userBookings.map((b) => (
+                        <div
+                          key={b.id}
+                          className="flex justify-between items-center border rounded-lg p-3"
+                        >
+                          <div>
+                            <p className="font-medium">{b.facility_name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {b.booking_date} • {b.start_time} - {b.end_time}
+                            </p>
+                          </div>
+
+                          <Badge
+                            variant={b.status === "confirmed" ? "default" : "secondary"}
+                          >
+                            {b.status}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+
+                {/* Actions */}
+                <Button
+                  variant="destructive"
+                  className="w-full"
+                >
+                  Delete User
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* ================= USER DETAILS DRAWER ================= */}
+          {isDrawerOpen && selectedUser && (
+            <div className="fixed inset-0 bg-black/40 z-50 flex justify-end">
+              <div className="w-[420px] bg-background h-full p-6 overflow-y-auto">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold">User Details</h2>
+                  <button onClick={() => setIsDrawerOpen(false)}>✕</button>
+                </div>
+
+                <div className="space-y-2">
+                  <p><b>Username:</b> {selectedUser.username}</p>
+                  <p><b>Name:</b> {selectedUser.firstName} {selectedUser.lastName}</p>
+                  <p><b>Email:</b> {selectedUser.email}</p>
+                  <p><b>Phone:</b> {selectedUser.phone || "-"}</p>
+                  <p><b>Role:</b> {selectedUser.role}</p>
+                  <p><b>Status:</b> {selectedUser.isActive ? "Active" : "Inactive"}</p>
+                </div>
+
+                <div className="mt-6">
+                  <h3 className="font-semibold mb-2">Membership</h3>
+                  {selectedUser.membership ? (
+                    <p>{selectedUser.membership.plan_name}</p>
+                  ) : (
+                    <p className="text-muted-foreground">No membership</p>
+                  )}
+                </div>
+
+                {/* 👇 NEXT STEP: BOOKINGS TABLE GOES HERE */}
+              </div>
+            </div>
+          )}
         </main>
       </div>
     </div>

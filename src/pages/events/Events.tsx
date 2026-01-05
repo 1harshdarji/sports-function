@@ -1,17 +1,18 @@
 import { Layout } from "@/components/Layout";
 import EventsHero from "./EventsHero";
-import ExploreEvents from "./ExploreEvents";
+import EventCategories from "./Eventcategories";
 import EventsList from "./EventsList";
 
 const Events = () => {
   return (
     <Layout>
-      {/* HERO SLIDER (auto sliding, transparent) */}
+      {/* Hero Section */}
       <EventsHero />
-      {/* CATEGORY CARDS (static images) */}
-      <ExploreEvents />
 
-      {/* EVENTS GRID */}
+      {/* Category Navigation */}
+      <EventCategories />
+
+      {/* Events Listing */}
       <EventsList />
     </Layout>
   );

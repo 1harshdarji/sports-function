@@ -101,6 +101,14 @@ const login = async (req, res, next) => {
                 message: 'Account is deactivated. Please contact support.'
             });
         }
+        // ADMIN DISABLED
+        if (!user.is_active) {
+            return res.status(403).json({
+                success: false,
+                message: "Your account has been disabled. Contact admin.",
+            });
+            }
+
 
         // Verify password
         const isValidPassword = await bcrypt.compare(password, user.password);

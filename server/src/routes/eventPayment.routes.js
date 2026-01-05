@@ -13,3 +13,4 @@ router.post("/razorpay/verify", authenticate, verifyEventRazorpayPayment);
 
 
 module.exports = router;
+// this is event payment routes

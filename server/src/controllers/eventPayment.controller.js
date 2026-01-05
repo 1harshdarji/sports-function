@@ -45,7 +45,28 @@ const createEventRazorpayOrder = async (req, res, next) => {
         message: `Only ${remainingSeats} seats left`,
       });
     }
+    
+    // 🚫 BLOCK USER IF ALREADY BOOKED 3 FOR SAME SLOT
+    const [[userSlotBooking]] = await db.execute(
+      `
+      SELECT COALESCE(SUM(quantity),0) AS booked
+      FROM event_bookings
+      WHERE user_id = ?
+        AND event_id = ?
+        AND slot_id = ?
+        AND status IN ('pending','confirmed')
+      `,
+      [userId, eventId, slotId]
+    );
 
+    if (userSlotBooking.booked + quantity > 3) {
+      return res.status(400).json({
+        success: false,
+        message: `You can book only ${
+          3 - userSlotBooking.booked
+        } more seat(s) for this time slot`,
+      });
+    }
     // 2️⃣ Calculate amount
     const amount = slot.price * quantity;
 
