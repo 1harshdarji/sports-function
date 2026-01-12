@@ -1,6 +1,6 @@
 import { Layout } from "@/components/Layout";
 import EventsHero from "./EventsHero";
-import EventCategories from "./Eventcategories";
+import EventCategories from "./EventCategories";
 import EventsList from "./EventsList";
 
 const Events = () => {

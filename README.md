@@ -56,3 +56,47 @@ Backend runs on http://localhost:5000
 
 #The frontend communicates with the backend using REST APIs over HTTP.
 
+Project Objectives
+
+Manage sports club members and memberships
+Allow users to browse and book events
+Provide secure authentication and authorization
+Enable admins to manage events and event slots
+Allow admins to enable/disable event slots dynamically
+Build a clean, responsive, and scalable system
+Implement real-world backend integration using REST APIs
+
+Core Features
+
+User Features
+
+User registration and login
+View available events
+View event slots with time, seats, and availability
+Book available event slots
+View personal bookings
+
+Admin Features
+
+Secure admin login
+Admin dashboard with statistics
+View total members and active bookings
+View and manage all events
+Create new events (backend integrated)
+Manage event slots:
+View slots per event
+Enable or disable slots
+View bookings for specific events
+Manage users (view & disable users)
+
+
+Frontend (React + Vite)
+        |
+        | REST API (Axios)
+        |
+Backend (Node.js + Express)
+        |
+        |
+Database (MySQL)
+
+

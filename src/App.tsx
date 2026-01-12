@@ -6,14 +6,23 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Membership from "./pages/Membership";
+
+import Membership from "./pages/membership";
+
 import Facilities from "./pages/Facilities";
 import Grounds from "./pages/Grounds"; //Added
 import Booking from "./pages/Booking"; // Added
+
 import EventsList from "@/pages/events/EventsList";
 import EventDetails from "./pages/events/EventDetails";
 import EventBooking from "@/pages/events/EventBooking";
+import AdminEvents from "@/pages/admin/AdminEvents";
 import Events from "./pages/events/Events";
+import AdminCreateEvent from "@/pages/admin/AdminCreateEvent";
+import AdminEventSlots from "@/pages/admin/AdminEventSlots";
+import AdminEventBookings from "@/pages/admin/AdminEventBookings";
+
+
 import Payment from "./pages/Payment";
 import Profile from "./pages/Profile";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -42,6 +51,12 @@ const App = () => (
           <Route path="/events/:eventId" element={<EventDetails />} />
           <Route path="/events/:eventId/book" element={<EventBooking />} />
           <Route path="/events" element={<EventsList />} />
+          
+          <Route path="/admin/events" element={<AdminRoute><AdminEvents /></AdminRoute>}/>
+          <Route path="/admin/events/create" element={<AdminRoute><AdminCreateEvent /></AdminRoute>}/>
+          <Route path="/admin/events/:eventId/slots" element={<AdminRoute><AdminEventSlots /></AdminRoute> }/>
+          <Route path="/admin/events/:eventId/bookings" element={<AdminRoute><AdminEventBookings /></AdminRoute>}/>
+
           <Route path="/payment" element={<Payment />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute> }/>

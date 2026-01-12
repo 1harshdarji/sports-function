@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import AdminEvents from "./admin/AdminEvents"; // added
+
 import {
   Users,
   Calendar,
@@ -30,16 +32,6 @@ const handleAdminLogout = () => {
   localStorage.removeItem("role");
   window.location.href = "/login";
 };
-
-/* =========================
-   Static Dashboard Data (KEPT FOR FUTURE)
-========================= */
-// const stats = [
-//   { label: "Total Members", value: "5,234", change: "+12%", trend: "up", icon: Users },
-//   { label: "Active Bookings", value: "142", change: "+8%", trend: "up", icon: Calendar },
-//   { label: "Monthly Revenue", value: "$87,430", change: "+23%", trend: "up", icon: DollarSign },
-//   { label: "Attendance Rate", value: "89%", change: "-2%", trend: "down", icon: TrendingUp },
-// ];
 
 const recentMembers = [
   { name: "Sarah Johnson", email: "sarah@example.com", plan: "Premium", joined: "Today" },
@@ -70,7 +62,7 @@ const AdminDashboard = () => {
   const location = useLocation();
 
   /* ---------- STATE ---------- */
-  const [view, setView] = useState<"dashboard" | "members" | "activeBookings">("dashboard");
+  const [view, setView] = useState<"dashboard" | "members" | "activeBookings" | "events" >("dashboard"); //added events
   const [users, setUsers] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
@@ -85,6 +77,8 @@ const AdminDashboard = () => {
     recentMembers: [],
     todaysBookings: [],
   });
+
+  const [events, setEvents] = useState<any[]>([]);
 
   const [dashboard, setDashboard] = useState<any>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
@@ -292,6 +286,14 @@ const disableUser = async (id: number) => {
                 trend: "up",
                 change: "",
               },
+              {
+                label: "Events",
+                value: events.length, // We'll need to fetch this
+                key: "events",
+                icon: Calendar,
+                trend: "up",
+                change: "",
+              },
             ].map((stat, i) => (
               <Card
                 key={i}
@@ -299,6 +301,7 @@ const disableUser = async (id: number) => {
                 onClick={() => {
                   if (stat.key === "members") setView("members");
                   if (stat.key === "bookings") setView("activeBookings");
+                  if (stat.key === "events") setView("events");
                 }}
               >
                 <CardContent className="p-5">
@@ -383,6 +386,10 @@ const disableUser = async (id: number) => {
                 </CardContent>
               </Card>
             )}
+            {view === "events" && ( //added
+              <AdminEvents />
+            )}
+
 
           {/* ================= RECENT ================= */}
           <div className="grid lg:grid-cols-2 gap-6">
