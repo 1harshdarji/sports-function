@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Layout } from "@/components/Layout";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, MapPin, Calendar, Clock, ClipboardList } from "lucide-react";
 import { formatBookingDate } from "@/lib/date"; // ✅ ADD THIS
 
 const toYMD = (d: Date) =>
@@ -11,10 +11,18 @@ const toYMD = (d: Date) =>
   ).padStart(2, "0")}`;
 
 const Booking = () => {
+  const [activeImage, setActiveImage] = useState(0);
+
   const { facilityId } = useParams();
   const navigate = useNavigate();
-
   const [facility, setFacility] = useState<any>(null);
+  /*===============Image Slider=======================*/
+  const images = facility?.imageUrl
+  ? [1, 2, 3, 4].map(
+      (n) => `http://localhost:5000${facility.imageUrl}/${n}.jpg`
+    )
+  : [];
+
   const [selectedSlot, setSelectedSlot] = useState<any>(null);
   const [slots, setSlots] = useState<any[]>([]);
 
@@ -216,6 +224,15 @@ const Booking = () => {
       alert("Failed to start payment");
     }
   };
+  useEffect(() => {
+  if (!images.length) return;
+
+  const interval = setInterval(() => {
+    setActiveImage((prev) => (prev + 1) % images.length);
+  }, 3000); // change image every 3 seconds
+
+  return () => clearInterval(interval);
+}, [images]);
 
 
   /* ================= UI ================= */
@@ -232,33 +249,60 @@ const Booking = () => {
           </button>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-            {/* IMAGE */}
-            <div className="h-[420px] rounded-2xl overflow-hidden bg-black">
-              {facility && (
-                <img
-                  src={
-                    facility.imageUrl ||
-                    "https://images.unsplash.com/photo-1521412644187-c49fa049e84d"
-                  }
-                  alt={facility.name}
-                  className="w-full h-full object-cover"
-                />
-              )}
-            </div>
+            {/* LEFT COLUMN */}
+            <div className="space-y-4">
+              {/* IMAGE */}
+              <div className="h-[420px] rounded-2xl overflow-hidden bg-black">
+                {facility && (
+                  <img
+                    src={images[activeImage]}
+                    alt={facility.name}
+                    className="w-full h-full object-cover"
+                  />
+                )}
+              </div>
+
+              {/* FACILITY INFO CARD (BELOW IMAGE) */}
+                <div className="bg-white rounded-2xl shadow-lg p-6 mt-4 space-y-3">
+
+                  {/* SPORT TYPE */}
+                  <p className="text-xs font-semibold uppercase text-orange-500">
+                    {facility?.sportKey}
+                  </p>
+
+                  {/* GROUND NAME */}
+                  <h2 className="text-xl font-bold text-gray-900">
+                    {facility?.name}
+                  </h2>
+
+                  {/* LOCATION */}
+                  <p className="text-sm text-gray-500">
+                    {facility?.location}
+                  </p>
+
+                  {/* PRICE */}
+                  <div className="pt-3 border-t flex items-baseline gap-1">
+                    <span className="text-2xl font-bold text-gray-900">
+                      ₹{facility?.pricePerHour}
+                    </span>
+                    <span className="text-sm text-gray-500">/hour</span>
+                  </div>
+                </div>
+              </div>
 
             {/* BOOKING CARD */}
             <div className="bg-white rounded-2xl shadow-lg p-6 space-y-6">
               {/* TITLE */}
-              <div>
-                <h2 className="text-2xl font-bold capitalize">
-                  {facility?.sportKey}
+              <div className="-mx-6 -mt-6 mb-6 bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4 rounded-t-2xl">
+                <h2 className="text-xl font-bold text-white">
+                  <Calendar className="w-5 h-5 text-white" />
+                  Book Your Session
                 </h2>
-                <p className="text-sm text-muted-foreground">
-                  {facility?.name}
-                  {facility?.location ? ` • ${facility.location}` : ""}
+                <p className="text-sm text-orange-100">
+                  Select your preferred date and time
                 </p>
               </div>
-
+              
               {/* DATE HEADER */}
               <div className="flex items-center justify-between mb-3">
                 <button
@@ -318,7 +362,10 @@ const Booking = () => {
 
               {/* TIME SLOTS */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Select Time</label>
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Clock className="w-4 h-4 text-orange-500" />
+                  Available Time Slots
+                </div>
                 <div className="grid grid-cols-4 gap-2">
                     {slots.map((slot) => {
                       //const isDisabled = !slot.isAvailable;
@@ -349,20 +396,25 @@ const Booking = () => {
               </div>
 
               {/* SUMMARY */}
-              <div className="bg-gray-100 rounded-xl p-4 space-y-4">
-                <h3 className="font-semibold text-sm">Booking Summary</h3>
+              <div className="bg-[#fff7ed] rounded-2xl p-5 border border-[#fde68a] space-y-4">
+                <h3 className="flex items-center gap-2 font-semibold text-sm text-[#9a3412]">
+                  <ClipboardList className="w-4 h-4 text-orange-500" />
+                  Booking Summary
+                </h3>
 
+                {/* Facility */}
                 <div className="text-sm space-y-2">
-                  <div className="flex justify-between">
-                    <span>Facility</span>
-                    <span className="font-medium capitalize">
+                  <div className="flex justify-between border-b border-[#fde68a] pb-2">
+                    <span className="text-[#9a3412]/70">Facility</span>
+                    <span className="font-medium capitalize text-[#9a3412]">
                       {facility?.sportKey}
                     </span>
                   </div>
 
-                  <div className="flex justify-between">
-                    <span>Ground</span>
-                    <span>
+                  {/* Ground */}
+                  <div className="flex justify-between border-b border-[#fde68a] pb-2">
+                    <span className="text-[#9a3412]/70">Ground</span>
+                    <span className="text-right text-[#9a3412]">
                       {facility?.name}
                       {facility?.location
                         ? `, ${facility.location}`
@@ -370,9 +422,10 @@ const Booking = () => {
                     </span>
                   </div>
 
-                  <div className="flex justify-between">
-                    <span>Date</span>
-                    <span>
+                  {/* Date */}
+                  <div className="flex justify-between border-b border-[#fde68a] pb-2">
+                    <span className="text-[#9a3412]/70">Date</span>
+                    <span className="text-[#9a3412]">
                       {`${selectedDate.getDate()} ${selectedDate.toLocaleDateString("en-IN", {
                         weekday: "long",
                       })}, ${selectedDate.toLocaleDateString("en-IN", {
@@ -381,9 +434,10 @@ const Booking = () => {
                     </span>
                   </div>
 
-                  <div className="flex justify-between">
-                    <span>Time</span>
-                    <span>
+                  {/* Time */}
+                  <div className="flex justify-between border-b border-[#fde68a] pb-2">
+                    <span className="text-[#9a3412]/70">Time</span>
+                    <span className="text-[#9a3412]">
                       {selectedSlot
                         ? `${formatTo12Hour(
                             selectedSlot.startTime
@@ -392,9 +446,12 @@ const Booking = () => {
                     </span>
                   </div>
 
-                  <div className="flex justify-between">
-                    <span>Price</span>
-                    <span className="font-semibold">
+                  {/* Amount */}
+                  <div className="flex justify-between pt-2">
+                    <span className="font-semibold text-[#9a3412]">
+                      Total Amount
+                    </span>
+                    <span className="text-xl font-bold text-[#9a3412]">
                       ₹{facility?.pricePerHour}
                     </span>
                   </div>
@@ -403,9 +460,16 @@ const Booking = () => {
                 <button
                   disabled={!selectedSlot}
                   onClick={handleConfirmBooking}
-                  className="w-full mt-4 bg-orange-500 text-white py-2 rounded-lg disabled:opacity-50"
+                  className={`
+                    w-full mt-4 py-3 rounded-xl font-semibold transition
+                    ${
+                      selectedSlot
+                        ? "bg-orange-500 text-white hover:bg-orange-600"
+                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                    }
+                  `}
                 >
-                  Confirm Booking
+                  {selectedSlot ? "Confirm Booking" : "Select a time slot"}
                 </button>
               </div>
             </div>

@@ -1,6 +1,7 @@
 import { Check, Star, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
 
 interface PlanCardProps {
   name: string;
@@ -9,11 +10,20 @@ interface PlanCardProps {
   benefits: string[];
   variant: "starter" | "pro" | "elite";
   popular?: boolean;
+  activeMembership: any;
 }
 
-const PlanCard = ({ name, price, description, benefits, variant, popular }: PlanCardProps) => {
+const calculateDaysRemaining = (endDate: string) => {
+  const end = new Date(endDate).getTime();
+  const now = Date.now();
+  return Math.max(Math.ceil((end - now) / (1000 * 60 * 60 * 24)), 0);
+};
+
+const PlanCard = ({ name, price, description, benefits, variant, popular,activeMembership, }: PlanCardProps) => {
   const isProVariant = variant === "pro";
   const isEliteVariant = variant === "elite";
+  const navigate = useNavigate();
+
 
   return (
     <div
@@ -108,6 +118,18 @@ const PlanCard = ({ name, price, description, benefits, variant, popular }: Plan
       {/* CTA Button */}
       <Button
         size="lg"
+        onClick={() => {
+          if (activeMembership) {
+            alert(
+              `You are currently on ${activeMembership.plan_name}.\n` +
+              `You can renew or book a new plan after ` +
+              `${calculateDaysRemaining(activeMembership.end_date)} days.`
+            );
+            return;
+          }
+
+          navigate(`/membership/checkout/${variant}`);
+        }}
         className={cn(
           "w-full h-12 font-semibold rounded-xl transition-all duration-300",
           isProVariant && "bg-white text-[#f97316] hover:bg-white/90",

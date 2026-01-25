@@ -2,6 +2,10 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Dumbbell, User } from "lucide-react";
+import { useEffect } from "react";
+import axios from "axios";
+import { Badge } from "@/components/ui/badge";
+
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -17,8 +21,28 @@ export function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const [activeMembership, setActiveMembership] = useState<any>(null); // Member badge
   const token = localStorage.getItem("token");
   const username = localStorage.getItem("username");
+
+  useEffect(() => {
+    if (!token) {
+      setActiveMembership(null);
+      return;
+    }
+
+    axios
+      .get("http://localhost:5000/api/membership-payments/my", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => {
+        setActiveMembership(res.data.data); // null OR active membership
+      })
+      .catch(() => {
+        setActiveMembership(null);
+      });
+  }, [token]);
+
 
 
 
@@ -65,15 +89,32 @@ export function Navbar() {
                 </Link>
               </>
             ) : (
-              <Button
-                variant="secondary"
-                className="flex items-center gap-2 px-4"
-                onClick={() => navigate("/profile")}
-              >
-                <User className="w-4 h-4" />
-                <span className="capitalize">{username || "User"}</span>
-              </Button>
+              <div className="flex items-center gap-2">
+                {activeMembership && (
+                  <Badge
+                    className="
+                      bg-emerald-100 text-emerald-700
+                      px-4 py-2
+                      text-sm font-medium
+                      rounded-lg
+                      flex items-center
+                      hover:bg-emerald-100 hover:text-emerald-700
+                    "
+                  >
+                    {activeMembership.plan_name} Member
+                  </Badge>
 
+                )}
+
+                <Button
+                  variant="secondary"
+                  className="flex items-center gap-2 px-4"
+                  onClick={() => navigate("/profile")}
+                >
+                  <User className="w-4 h-4" />
+                  <span className="capitalize">{username || "User"}</span>
+                </Button>
+              </div>
             )}
 
           </div>
@@ -125,10 +166,19 @@ export function Navbar() {
                 </>
               ) : (
                 <>
-                  <div className="flex items-center justify-center gap-2 font-medium py-2">
-                    <User className="w-4 h-4" />
-                    {username || "User"}
+                  <div className="flex flex-col items-center gap-1 py-2">
+                    <div className="flex items-center gap-2 font-medium">
+                      <User className="w-4 h-4" />
+                      {username || "User"}
+                    </div>
+
+                    {activeMembership && (
+                      <Badge className="bg-emerald-100 text-emerald-700 text-xs">
+                        {activeMembership.plan_name} Member
+                      </Badge>
+                    )}
                   </div>
+
                   <Button
                     variant="outline"
                     className="w-full"

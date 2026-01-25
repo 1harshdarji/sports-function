@@ -6,12 +6,13 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 
 // Import routes
-
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const membershipRoutes = require('./routes/membership.routes');
+const membershipPaymentRoutes = require('./routes/membershipPayment.routes');
 const facilityRoutes = require('./routes/facility.routes');
 const bookingRoutes = require('./routes/booking.routes');
 const eventRoutes = require('./routes/event.routes');
@@ -20,6 +21,7 @@ const paymentRoutes = require('./routes/payment.routes');
 const eventPaymentRoutes = require('./routes/eventPayment.routes');
 const adminRoutes = require('./routes/admin.routes');
 const profileRoutes = require('./routes/profile.routes');
+
 
 
 // Import database connection
@@ -46,6 +48,13 @@ app.use(express.json());
 // Parse URL-encoded bodies
 app.use(express.urlencoded({ extended: true }));
 
+// =============================================
+// STATIC FILES (FACILITY IMAGES)
+// =============================================
+app.use(
+  '/uploads',
+  express.static(path.join(__dirname, '..', 'uploads'))
+);
 
 
 // Request logging (development)
@@ -73,6 +82,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/memberships', membershipRoutes);
+app.use('/api/membership-payments',membershipPaymentRoutes);
 app.use('/api/facilities', facilityRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/events', eventRoutes);

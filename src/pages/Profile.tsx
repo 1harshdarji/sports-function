@@ -58,6 +58,14 @@ const formatTime12h = (time: string) => {
   const ampm = h >= 12 ? "PM" : "AM";
   return `${hour}:${m.toString().padStart(2, "0")} ${ampm}`;
 };
+//
+// Dayss left for membership 
+//const getDaysLeft = (endDate: string) => {
+//  const end = new Date(endDate).getTime();
+//  const now = new Date().getTime();
+//  return Math.max(Math.ceil((end - now) / (1000 * 60 * 60 * 24)), 0);
+//};
+
 
 const Profile = () => {
   /* ================= LOGOUT ================= */
@@ -128,6 +136,8 @@ const handleSaveProfile = async () => {
   const [userBookings, setUserBookings] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("overview"); // ✅ ADD
   const [eventBookings, setEventBookings] = useState([]); // EVENT
+  const [membership, setMembership] = useState<any>(null); // MEMBERSHIP
+
 
   const [formData, setFormData] = useState({
     first_name: "",
@@ -165,6 +175,42 @@ const handleSaveProfile = async () => {
     };
     fetchBookings();
   }, [activeTab]);
+  
+/*======================   MEMBERSHIP FETCH   ===========================*/
+useEffect(() => {
+  if (activeTab !== "billing") return;
+
+  const fetchMembership = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await axios.get(
+        "http://localhost:5000/api/membership-payments/my",
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setMembership(res.data.data);
+    } catch (err) {
+      console.error("Membership fetch failed", err);
+    }
+  };
+
+  fetchMembership();
+}, [activeTab]);
+
+//================ DATE HELPRE FOR MEMBERSHIP ====================
+const safeDate = (d?: string) =>
+  d ? new Date(d).toLocaleDateString("en-IN") : "—";
+
+const calculateDaysRemaining = (endDate?: string) => {
+  if (!endDate) return "—";
+  const end = new Date(endDate);
+  const now = new Date();
+  const diff = Math.ceil(
+    (end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+  );
+  return diff >= 0 ? diff : 0;
+};
 
 /* ================= FETCH PROFILE ================= */
   useEffect(() => {
@@ -211,6 +257,7 @@ if (loading) {
     </Layout>
   );
 }
+
 
   return (
     <Layout>
@@ -414,48 +461,43 @@ if (loading) {
             </TabsContent>
 
             {/* ================= BILLINGS TAB ================= */}
-            <TabsContent value="billing" className="space-y-6">
-              <Card variant="elevated">
-                <CardHeader>
-                  <CardTitle className="text-lg">Current Plan</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between p-4 bg-muted rounded-xl">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl gradient-coral flex items-center justify-center shadow-coral">
-                        <span className="text-xl">⭐</span>
-                      </div>
-                      <div>
-                        <h4 className="font-semibold">Premium Plan</h4>
-                        <p className="text-sm text-muted-foreground">$59/month • Renews Jan 13, 2025</p>
-                      </div>
+            <TabsContent value="billing">
+              {!membership ? (
+                <Card variant="elevated">
+                  <CardContent className="p-8 text-center text-muted-foreground">
+                    No active membership found
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card variant="elevated">
+                  <CardHeader className="flex flex-row justify-between items-center">
+                    <CardTitle>Membership Details</CardTitle>
+                    <Badge className="bg-emerald-100 text-emerald-700">
+                      {membership.status}
+                    </Badge>
+                  </CardHeader>
+
+                  <CardContent className="grid md:grid-cols-2 gap-6 text-sm">
+                    <div className="space-y-2">
+                      <p><b>Name:</b> {user?.first_name} {user?.last_name}</p>
+                      <p><b>Amount Paid:</b> ₹{membership.amount_paid}</p>
+                      <p><b>Start Date:</b> {safeDate(membership.start_date)}</p>
+                      <p><b>Purchased On:</b> {safeDate(membership.purchased_on)}</p>
                     </div>
-                    <Button variant="outline">Manage</Button>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card variant="elevated">
-                <CardHeader>
-                  <CardTitle className="text-lg">Payment Method</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between p-4 bg-muted rounded-xl">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-card flex items-center justify-center border">
-                        <CreditCard className="w-6 h-6 text-primary" />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold">•••• •••• •••• 4242</h4>
-                        <p className="text-sm text-muted-foreground">Expires 12/26</p>
-                      </div>
+
+                    <div className="space-y-2">
+                      <p><b>Plan:</b> {membership.plan_name}</p>
+                      <p>
+                        <b>Days Remaining:</b>{" "}
+                        {calculateDaysRemaining(membership.end_date)} days
+                      </p>
+                      <p><b>End Date:</b> {safeDate(membership.end_date)}</p>
                     </div>
-                    <Button variant="ghost" size="icon">
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
+
 
             {/* ================= PERSONAL INFORMATION TAB ================= */}
             <TabsContent value="settings" className="space-y-6">

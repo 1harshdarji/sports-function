@@ -73,8 +73,9 @@ const Grounds = () => {
                 {/* Image */}
                 <img
                   src={
-                    ground.imageUrl ||
-                    "https://images.unsplash.com/photo-1521412644187-c49fa049e84d"
+                    ground?.imageUrl
+                      ? `http://localhost:5000${ground.imageUrl}/1.jpg`
+                      : "https://images.unsplash.com/photo-1521412644187-c49fa049e84d"
                   }
                   alt={ground.name}
                   className="

@@ -1,3 +1,6 @@
+// THIS PAGE OWNS DATA AND API CALLS
+import { useEffect, useState } from "react";
+import axios from "axios";
 import PlanCard from "./PlanCard";
 
 const plans = [
@@ -44,6 +47,20 @@ const plans = [
 ];
 
 const PlansSection = () => {
+    const [activeMembership, setActiveMembership] = useState<any>(null);
+
+    useEffect(() => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      axios
+        .get("http://localhost:5000/api/membership-payments/my", {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then(res => setActiveMembership(res.data.data))
+        .catch(() => setActiveMembership(null));
+    }, []);
+
   return (
     <section id="plans" className="py-24 bg-[#f8fafc]">
       <div className="container px-4 sm:px-6 lg:px-8">
@@ -60,8 +77,13 @@ const PlansSection = () => {
         {/* Plans grid */}
         <div className="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto items-start">
           {plans.map((plan) => (
-            <PlanCard key={plan.name} {...plan} />
+            <PlanCard
+              key={plan.name}
+              {...plan}
+              activeMembership={activeMembership}
+            />
           ))}
+
         </div>
       </div>
     </section>

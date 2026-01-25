@@ -325,7 +325,7 @@ const getMyEventBookings = async (req, res, next) => {
         es.end_time,
         eb.quantity,
         es.price,
-        (eb.quantity * es.price) AS total_amount
+        eb.total_price AS total_amount 
       FROM event_bookings eb
       JOIN events e ON eb.event_id = e.id
       JOIN event_slots es ON eb.slot_id = es.id

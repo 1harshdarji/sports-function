@@ -67,12 +67,37 @@ const createEventRazorpayOrder = async (req, res, next) => {
         } more seat(s) for this time slot`,
       });
     }
+
+    // IF A MEMBER CHECK
+    const [[membership]] = await db.execute(`
+      SELECT mp.name AS plan_name
+      FROM user_memberships um
+      JOIN membership_plans mp ON mp.id = um.plan_id
+      WHERE um.user_id = ?
+        AND um.status = 'active'
+        AND um.end_date >= CURDATE()
+      LIMIT 1
+    `, [userId]);
+
     // 2️⃣ Calculate amount
-    const amount = slot.price * quantity;
+    //const amount = slot.price * quantity;
+    
+    // 🔵 DISCOUNT CALCULATION (ADD ONLY)
+    let discountPercent = 0;
+
+    if (membership) {
+      if (membership.plan_name === "Pro") discountPercent = 10;
+      if (membership.plan_name === "Elite") discountPercent = 25;
+    }
+
+    const baseAmount = slot.price * quantity;
+    const discountAmount = Math.round(baseAmount * (discountPercent / 100));
+    const finalAmount = baseAmount - discountAmount;
 
     // 3️⃣ Create Razorpay order
     const order = await razorpay.orders.create({
-      amount: Math.round(amount * 100),
+      //amount: Math.round(amount * 100),
+      amount: Math.round(finalAmount * 100),
       currency: "INR",
       receipt: `event_${eventId}_slot_${slotId}`,
     });
@@ -82,7 +107,7 @@ const createEventRazorpayOrder = async (req, res, next) => {
       `INSERT INTO payments
        (user_id, amount, currency, payment_type, reference_id, gateway, gateway_order_id, status)
        VALUES (?, ?, 'INR', 'event', ?, 'razorpay', ?, 'pending')`,
-      [userId, amount, slotId, order.id]
+      [userId, finalAmount, slotId, order.id]
     );
 
     res.json({
@@ -92,6 +117,13 @@ const createEventRazorpayOrder = async (req, res, next) => {
         amount: order.amount,
         currency: order.currency,
         key: process.env.RAZORPAY_KEY_ID,
+        pricing: {
+          baseAmount,
+          discountPercent,
+          discountAmount,
+          finalAmount,
+          membershipPlan: membership?.plan_name || null,
+        }
       },
     });
   } catch (error) {
@@ -189,7 +221,8 @@ const verifyEventRazorpayPayment = async (req, res, next) => {
         bookingData.eventId,
         bookingData.slotId,
         bookingData.quantity,
-        bookingData.amount,
+        //bookingData.amount,
+        bookingData.finalAmount,
       ]
     );
 

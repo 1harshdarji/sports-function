@@ -8,6 +8,8 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 
 import Membership from "./pages/membership";
+import MembershipCheckout from "@/pages/membership/MembershipCheckout";
+
 
 import Facilities from "./pages/Facilities";
 import Grounds from "./pages/Grounds"; //Added
@@ -44,6 +46,9 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/membership" element={<Membership />} />
+          <Route path="/membership/checkout/:plan" element={<MembershipCheckout />} />
+
+
           <Route path="/facilities" element={<Facilities />} />
           <Route path="/grounds/:sportKey" element={<Grounds />} />
           <Route path="/booking/:facilityId" element={<Booking />} />

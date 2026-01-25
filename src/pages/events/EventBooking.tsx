@@ -49,6 +49,7 @@ const EventBooking = () => {
   const [view, setView] = useState<"calendar" | "list">("list");
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [bookingError, setBookingError] = useState<string | null>(null);
+  const [pricing, setPricing] = useState<any>(null);// MEMBERSHIP
 
 
   /* ================= HELPERS ================= */
@@ -142,7 +143,9 @@ const EventBooking = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      const { orderId, amount, currency, key } = orderRes.data.data;
+      //const { orderId, amount, currency, key } = orderRes.data.data;
+      const { orderId, amount, currency, key, pricing } = orderRes.data.data;
+      setPricing(pricing);
 
       const razorpay = new (window as any).Razorpay({
         key,
@@ -166,6 +169,7 @@ const EventBooking = () => {
                 endTime: selectedSlot.end_time,
                 quantity,
                 amount: selectedSlot.price * quantity,
+                finalAmount: pricing.finalAmount    
               },
             },
             { headers: { Authorization: `Bearer ${token}` } }
@@ -459,13 +463,49 @@ const EventBooking = () => {
                       Max 3 per booking
                     </p>
                   </div>
-
+                  {/*
                   <div className="border-t pt-4 flex justify-between items-center">
                     <span className="text-muted-foreground">Total Amount</span>
                     <span className="text-xl font-bold">
                       ₹{selectedSlot.price * quantity}
                     </span>
+                  </div>*/}
+                  <div className="border-t pt-4 space-y-2 text-sm">
+
+                    {/* BASE PRICE */}
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Base Price</span>
+                      <span
+                        className={
+                          pricing?.discountPercent
+                            ? "line-through text-muted-foreground"
+                            : "font-medium"
+                        }
+                      >
+                        ₹{selectedSlot.price * quantity}
+                      </span>
+                    </div>
+
+                    {/* DISCOUNT (ONLY IF MEMBER) */}
+                    {pricing?.discountPercent > 0 && (
+                      <div className="flex justify-between text-emerald-600">
+                        <span>
+                          {pricing.membershipPlan} Member Discount ({pricing.discountPercent}%)
+                        </span>
+                        <span>-₹{pricing.discountAmount}</span>
+                      </div>
+                    )}
+
+                    {/* FINAL PRICE */}
+                    <div className="flex justify-between items-center pt-2 border-t">
+                      <span className="text-muted-foreground">Total Amount</span>
+                      <span className="text-xl font-bold">
+                        ₹{pricing?.finalAmount ?? selectedSlot.price * quantity}
+                      </span>
+                    </div>
+
                   </div>
+
 
                   {bookingError && (
                   <div className="mt-3 bg-red-50 border border-red-300 text-red-700 text-sm p-3 rounded-lg">
