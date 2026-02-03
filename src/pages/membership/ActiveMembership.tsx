@@ -20,7 +20,7 @@ const ActiveMembership = () => {
         {/* Section header */}
         <div className="text-center max-w-2xl mx-auto mb-12">
           <h2 className="font-display text-3xl sm:text-4xl font-bold text-[#0f172a] mb-4">
-            Your <span className="text-gradient">Active Membership</span>
+            Your <span className="text-[#f97316]">Active Membership</span>
           </h2>
           <p className="text-[#6b7280] text-lg">
             Track your membership status and manage your benefits.

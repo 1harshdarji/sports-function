@@ -12,13 +12,12 @@ import { Dumbbell, Mail, Lock, ArrowRight } from "lucide-react";
 
 const Login = () => {
   const navigate = useNavigate();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loginAsAdmin, setLoginAsAdmin] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
   e.preventDefault();
-
   try {
     const res = await axios.post(
       `${API_BASE_URL}/api/auth/login`,
@@ -28,27 +27,34 @@ const Login = () => {
       }
     );
 
-
+    //localStorage.setItem("token", res.data.data.token);
+    //localStorage.setItem(
+      //"user",
+      //JSON.stringify({
+        //...user,
+        //first_name: user.firstName, // FIX: normalize naming
+        //last_name: user.lastName
+      //})
+    //);
+    //localStorage.setItem("role", user.role);
+    // ✅ ONLY STORE AUTH DATA
     // ✅ store token
     const user = res.data.data.user;
-
     localStorage.setItem("token", res.data.data.token);
-    localStorage.setItem(
-      "user",
-      JSON.stringify({
-        ...user,
-        first_name: user.firstName, // FIX: normalize naming
-        last_name: user.lastName
-      })
-    );
     localStorage.setItem("role", user.role);
+    localStorage.setItem("username",`${user.firstName} ${user.lastName}`);
 
     alert("Login successful");
 
-    if (user.role === "admin") {
-      navigate("/admin", { replace: true });
+    if (loginAsAdmin) {
+      if (user.role !== "admin") {
+        alert("Access denied. Not an admin account.");
+        return;
+      }
+      window.location.href = "/admin";
     } else {
-      navigate("/", { replace: true });
+      window.location.href = "/";
+      //navigate("/", { replace: true });
     }
   } catch (err: any) {
     alert(err.response?.data?.message || "Login failed");
@@ -87,6 +93,20 @@ const Login = () => {
                     />
                   </div>
                 </div>
+                {email === "admin@sportshub.com" && (
+                  <div className="flex items-center gap-2 mt-2">
+                    <input
+                      type="checkbox"
+                      id="adminLogin"
+                      checked={loginAsAdmin}
+                      onChange={(e) => setLoginAsAdmin(e.target.checked)}
+                    />
+                    <Label htmlFor="adminLogin" className="cursor-pointer">
+                      Login as Admin
+                    </Label>
+                  </div>
+                )}
+
 
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">

@@ -21,9 +21,8 @@ const getProfile = async (req, res, next) => {
                 id,
                 username,
                 email,
-                first_name,
+                first_name, 
                 last_name,
-                age,
                 gender,
                 phone
              FROM users
@@ -38,10 +37,32 @@ const getProfile = async (req, res, next) => {
             });
         }
 
+        const userEmail = users[0].email;
+
+        const [coachReq] = await db.execute(
+        `SELECT age, status 
+        FROM coach_requests 
+        WHERE email = ? 
+        ORDER BY created_at DESC 
+        LIMIT 1`,
+        [userEmail]
+        );
+
+        const coachRequestStatus = coachReq.length
+            ? coachReq[0].status
+            : null;
+
+        const coachAge = coachReq.length
+            ? coachReq[0].age
+            : null;
         res.json({
             success: true,
-            data: users[0]
-        });
+            data: {
+                ...users[0],
+                age: coachAge,
+                coachRequestStatus
+            }
+            });
     } catch (error) {
         next(error);
     }

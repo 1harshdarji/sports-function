@@ -21,7 +21,8 @@ const paymentRoutes = require('./routes/payment.routes');
 const eventPaymentRoutes = require('./routes/eventPayment.routes');
 const adminRoutes = require('./routes/admin.routes');
 const profileRoutes = require('./routes/profile.routes');
-
+const coachBookingRoutes = require('./routes/coachBooking.routes'); // COACH BOOKING
+const coachPaymentRoutes = require('./routes/coachPayment.routes');
 
 
 // Import database connection
@@ -88,9 +89,20 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/events/payments', eventPaymentRoutes);
 app.use('/api/coaches', coachRoutes);
+
+app.use('/api/coach-bookings', coachBookingRoutes);
+app.use('/api/coach-payments', coachPaymentRoutes);
+
 app.use('/api/payments', paymentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/profile', profileRoutes);
+app.use("/api/coach-reviews", require("./routes/coachReview.routes"));
+
+app.use("/api", require("./routes/coachRequest.routes")); // JUST ADD THIS ONE NO NEED TO COPY ENTIRE FILE
+app.use("/api", require("./routes/adminCoach.routes"));
+
+
+
 //app.use('/api/payments', require('./routes/payment.routes'));
 
 

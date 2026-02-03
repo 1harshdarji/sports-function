@@ -6,7 +6,6 @@ import { useEffect } from "react";
 import axios from "axios";
 import { Badge } from "@/components/ui/badge";
 
-
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/membership", label: "Membership" },
@@ -23,7 +22,9 @@ export function Navbar() {
 
   const [activeMembership, setActiveMembership] = useState<any>(null); // Member badge
   const token = localStorage.getItem("token");
-  const username = localStorage.getItem("username");
+  
+  const [user, setUser] = useState<any>(null);
+
 
   useEffect(() => {
     if (!token) {
@@ -43,8 +44,23 @@ export function Navbar() {
       });
   }, [token]);
 
+  useEffect(() => {
+    if (!token) {
+      setUser(null);
+      return;
+    }
 
-
+    axios
+      .get("http://localhost:5000/api/profile", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => {
+        setUser(res.data.data);
+      })
+      .catch(() => {
+        setUser(null);
+      });
+  }, [token]);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-card/60 backdrop-blur-lg border-b shadow-soft">
@@ -112,7 +128,7 @@ export function Navbar() {
                   onClick={() => navigate("/profile")}
                 >
                   <User className="w-4 h-4" />
-                  <span className="capitalize">{username || "User"}</span>
+                  <span className="capitalize">{user ? `${user.first_name} ${user.last_name}` : "User"}</span>
                 </Button>
               </div>
             )}
@@ -167,11 +183,7 @@ export function Navbar() {
               ) : (
                 <>
                   <div className="flex flex-col items-center gap-1 py-2">
-                    <div className="flex items-center gap-2 font-medium">
-                      <User className="w-4 h-4" />
-                      {username || "User"}
-                    </div>
-
+                    {user ? `${user.first_name} ${user.last_name}` : "User"}
                     {activeMembership && (
                       <Badge className="bg-emerald-100 text-emerald-700 text-xs">
                         {activeMembership.plan_name} Member

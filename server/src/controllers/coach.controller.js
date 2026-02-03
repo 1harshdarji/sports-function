@@ -9,106 +9,122 @@ const db = require('../config/database');
  * Get all coaches
  */
 const getAllCoaches = async (req, res, next) => {
-    try {
-        const { specialization, available } = req.query;
+  try {
+    const { specialization, available } = req.query;
 
-        let query = `
-            SELECT c.*, u.username, u.email, u.first_name, u.last_name, u.avatar_url, u.phone
-            FROM coaches c
-            JOIN users u ON c.user_id = u.id
-            WHERE u.is_active = TRUE
-        `;
-        const params = [];
+    let query = `
+      SELECT 
+        id,
+        user_id,
+        first_name,
+        last_name,
+        specialization,
+        experience_years,
+        bio,
+        hourly_rate,
+        rating,
+        total_reviews,
+        is_available,
+        profile_image
+      FROM coaches
+      WHERE is_available = 1
+    `;
 
-        if (specialization) {
-            query += ' AND c.specialization LIKE ?';
-            params.push(`%${specialization}%`);
-        }
+    const params = [];
 
-        if (available === 'true') {
-            query += ' AND c.is_available = TRUE';
-        }
-
-        query += ' ORDER BY c.rating DESC, c.experience_years DESC';
-
-        const [coaches] = await db.execute(query, params);
-
-        res.json({
-            success: true,
-            data: coaches.map(c => ({
-                id: c.id,
-                userId: c.user_id,
-                username: c.username,
-                email: c.email,
-                name: `${c.first_name} ${c.last_name}`,
-                avatarUrl: c.avatar_url,
-                phone: c.phone,
-                specialization: c.specialization,
-                experienceYears: c.experience_years,
-                bio: c.bio,
-                certifications: c.certifications ? JSON.parse(c.certifications) : [],
-                hourlyRate: c.hourly_rate ? parseFloat(c.hourly_rate) : null,
-                availability: c.availability ? JSON.parse(c.availability) : null,
-                rating: parseFloat(c.rating),
-                totalReviews: c.total_reviews,
-                isAvailable: c.is_available
-            }))
-        });
-    } catch (error) {
-        next(error);
+    if (specialization) {
+      query += ' AND specialization LIKE ?';
+      params.push(`%${specialization}%`);
     }
+
+    if (available === 'true') {
+      query += ' AND is_available = 1';
+    }
+
+    query += ' ORDER BY rating DESC, experience_years DESC';
+
+    const [coaches] = await db.execute(query, params);
+
+    res.json({
+      success: true,
+      data: coaches.map(c => ({
+        id: c.id,
+        name: `${c.first_name} ${c.last_name}`,
+        specialization: c.specialization,
+        experienceYears: c.experience_years,
+        bio: c.bio,
+        hourlyRate: c.hourly_rate,
+        rating: Number(c.rating),
+        totalReviews: c.total_reviews,
+        profile_image: c.profile_image,
+      }))
+    });
+  } catch (error) {
+    next(error);
+  }
 };
+
 
 /**
  * Get coach by ID
  */
 const getCoachById = async (req, res, next) => {
-    try {
-        const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-        const [coaches] = await db.execute(
-            `SELECT c.*, u.username, u.email, u.first_name, u.last_name, u.avatar_url, u.phone
-             FROM coaches c
-             JOIN users u ON c.user_id = u.id
-             WHERE c.id = ?`,
-            [id]
-        );
+    const [rows] = await db.execute(
+      `
+      SELECT 
+        c.*,
+        cr.age,
+        cr.gender,
+        cr.email,
+        cr.phone,
+        cr.preferred_location
+      FROM coaches c
+      LEFT JOIN coach_requests cr
+        ON cr.user_id = c.user_id
+       AND cr.status = 'approved'
+      WHERE c.id = ?
+      `,
+      [id]
+    );
 
-        if (coaches.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Coach not found'
-            });
-        }
-
-        const coach = coaches[0];
-
-        res.json({
-            success: true,
-            data: {
-                id: coach.id,
-                userId: coach.user_id,
-                username: coach.username,
-                email: coach.email,
-                name: `${coach.first_name} ${coach.last_name}`,
-                avatarUrl: coach.avatar_url,
-                phone: coach.phone,
-                specialization: coach.specialization,
-                experienceYears: coach.experience_years,
-                bio: coach.bio,
-                certifications: coach.certifications ? JSON.parse(coach.certifications) : [],
-                hourlyRate: coach.hourly_rate ? parseFloat(coach.hourly_rate) : null,
-                availability: coach.availability ? JSON.parse(coach.availability) : null,
-                rating: parseFloat(coach.rating),
-                totalReviews: coach.total_reviews,
-                isAvailable: coach.is_available
-            }
-        });
-    } catch (error) {
-        next(error);
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Coach not found'
+      });
     }
-};
 
+    const coach = rows[0];
+
+    res.json({
+      success: true,
+      data: {
+        id: coach.id,
+        name: `${coach.first_name} ${coach.last_name}`,
+        specialization: coach.specialization,
+        experienceYears: coach.experience_years,
+        bio: coach.bio,
+        hourlyRate: coach.hourly_rate,
+        rating: Number(coach.rating),
+        totalReviews: coach.total_reviews,
+        // profile-only fields
+        age: coach.age,
+        gender: coach.gender,
+        email: coach.email,
+        phone: coach.phone,
+        location: coach.preferred_location,
+        profile_image: coach.profile_image,
+        achievements: coach.achievements,    
+        country: coach.country 
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 /**
  * Create coach profile (Admin only)
  */
@@ -156,7 +172,6 @@ const createCoach = async (req, res, next) => {
         next(error);
     }
 };
-
 /**
  * Update coach profile (Admin or self)
  */
@@ -230,11 +245,39 @@ const deleteCoach = async (req, res, next) => {
         next(error);
     }
 };
+// Get logged-in user's coach profile
+const getMyCoachProfile = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    const [rows] = await db.execute(
+      `SELECT * FROM coaches WHERE user_id = ?`,
+      [userId]
+    );
+
+    if (rows.length === 0) {
+      return res.json({
+        success: true,
+        isCoach: false
+      });
+    }
+
+    res.json({
+      success: true,
+      isCoach: true,
+      data: rows[0]
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 
 module.exports = {
     getAllCoaches,
     getCoachById,
     createCoach,
     updateCoach,
-    deleteCoach
+    deleteCoach,
+    getMyCoachProfile
 };

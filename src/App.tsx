@@ -30,7 +30,15 @@ import Profile from "./pages/Profile";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminBookings from "./pages/AdminBookings";
 import AdminRoute from "./pages/AdminRoute";
+
 import Coaches from "./pages/Coaches";
+import CoachProfile from "@/pages/CoachProfile";
+import AdminCoaches from "@/pages/admin/AdminCoaches";
+import BecomeCoach from "@/pages/BecomeCoach";
+import CoachBooking from "@/pages/CoachBooking";
+
+
+
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -66,7 +74,15 @@ const App = () => (
           <Route path="/profile" element={<Profile />} />
           <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute> }/>
           <Route path="/admin/bookings" element={<AdminRoute><AdminBookings /></AdminRoute>}/>
+
           <Route path="/coaches" element={<Coaches />} />
+          <Route path="/coaches/:id" element={<CoachProfile />} />
+          <Route path="/coaches/:id/book" element={<CoachBooking />} />
+
+          <Route path="/admin/coaches"element={<AdminRoute><AdminCoaches /></AdminRoute>}/>
+          <Route path="/become-coach" element={<BecomeCoach />} />
+
+
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

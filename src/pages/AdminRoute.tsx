@@ -1,19 +1,20 @@
 import { Navigate } from "react-router-dom";
 
 const AdminRoute = ({ children }: { children: JSX.Element }) => {
-  const user = localStorage.getItem("user");
   const token = localStorage.getItem("token");
+  const role = localStorage.getItem("role");
 
-  if (!token || !user) {
+  // ❌ Not logged in
+  if (!token) {
     return <Navigate to="/login" replace />;
   }
 
-  const parsedUser = JSON.parse(user);
-
-  if (parsedUser.role !== "admin") {
-    return <Navigate to="/" replace />; // ❌ user side blocked
+  // ❌ Logged in but not admin
+  if (role !== "admin") {
+    return <Navigate to="/" replace />;
   }
 
+  // ✅ Admin allowed
   return children;
 };
 

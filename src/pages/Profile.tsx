@@ -3,6 +3,7 @@ import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Layout } from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -137,6 +138,16 @@ const handleSaveProfile = async () => {
   const [activeTab, setActiveTab] = useState("overview"); // ✅ ADD
   const [eventBookings, setEventBookings] = useState([]); // EVENT
   const [membership, setMembership] = useState<any>(null); // MEMBERSHIP
+  const [coachStatus, setCoachStatus] = useState<"pending" | "approved" | "rejected" | null>(null); // COACHES
+  const [coachRequest, setCoachRequest] = useState<any>(null);
+  const token = localStorage.getItem("token");
+  const [coachTraining, setCoachTraining] = useState<any>(null);
+  const [rating, setRating] = useState(0);
+  const [review, setReview] = useState("");
+  const [activeCoach, setActiveCoach] = useState<any>(null);
+
+
+
 
 
   const [formData, setFormData] = useState({
@@ -211,6 +222,91 @@ const calculateDaysRemaining = (endDate?: string) => {
   );
   return diff >= 0 ? diff : 0;
 };
+
+// =================== COACHES ===========================
+
+useEffect(() => {
+  if (activeTab !== "coach") return;
+
+  const token = localStorage.getItem("token");
+
+  axios
+    .get("http://localhost:5000/api/coach-requests/my", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    .then((res) => {
+      if (res.data?.data) {
+        setCoachRequest(res.data.data);
+        setCoachStatus(res.data.data.status); // pending | approved | rejected
+      } else {
+        setCoachRequest(null);
+        setCoachStatus(null);
+      }
+    })
+    .catch(() => {
+      setCoachRequest(null);
+      setCoachStatus(null);
+    });
+}, [activeTab]);
+
+// ======================= TRAINNING ============================
+
+useEffect(() => {
+  if (activeTab !== "training") return;
+
+  const fetchTraining = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await axios.get(
+        "http://localhost:5000/api/coach-bookings/my",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const active = res.data.data.find(
+        (b: any) => b.payment_status === "paid"
+      );
+
+      setActiveCoach(active || null);   // used for review submit
+      setCoachTraining(active || null); // used for UI display
+    } catch (err) {
+      console.error("Failed to fetch coach booking", err);
+      setActiveCoach(null);
+      setCoachTraining(null);
+    }
+  };
+
+  fetchTraining();
+}, [activeTab]);
+
+
+const handleSubmitReview = async () => {
+  try {
+    const token = localStorage.getItem("token");
+
+    await axios.post(
+      "http://localhost:5000/api/coach-reviews",
+      {
+        coachId: activeCoach.coach_id,     // from booking
+        bookingId: activeCoach.id,          // coach_booking id
+        rating,
+        review,
+      },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    alert("Review submitted!");
+  } catch (err: any) {
+    console.error(err);
+    const message ="Failed to submit review";
+    alert(message); 
+  }
+};
+
 
 /* ================= FETCH PROFILE ================= */
   useEffect(() => {
@@ -311,6 +407,14 @@ if (loading) {
               <TabsTrigger value="settings" className="flex items-center gap-2">
                 <Settings className="w-4 h-4" />
                 Settings
+              </TabsTrigger>
+              <TabsTrigger value="coach" className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4" />
+                Coach
+              </TabsTrigger>
+              <TabsTrigger value="training" className="flex items-center gap-2">
+                <Trophy className="w-4 h-4" />
+                Training
               </TabsTrigger>
             </TabsList>
 
@@ -498,6 +602,206 @@ if (loading) {
               )}
             </TabsContent>
 
+            {/* ================= COACHES TAB ================= */}
+            <TabsContent value="coach" className="space-y-6">
+              {!coachRequest && coachStatus === null && (
+                <Card>
+                  <CardContent className="p-6 text-muted-foreground">
+                    You have not applied to become a coach yet.
+                  </CardContent>
+                </Card>
+              )}
+
+              {coachRequest && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Coach Application</CardTitle>
+                    <CardDescription>
+                      This information is read-only
+                    </CardDescription>
+                  </CardHeader>
+
+                  <CardContent className="space-y-4 text-sm">
+                    {/* STATUS */}
+                    {coachStatus === "pending" && (
+                      <Badge className="bg-orange-500 text-white">
+                        Pending Review
+                      </Badge>
+                    )}
+
+                    {coachStatus === "approved" && (
+                      <Badge className="bg-green-600 text-white">
+                        ✅ Approved – You are now visible on Coaches page
+                      </Badge>
+                    )}
+
+                    {coachStatus === "rejected" && (
+                      <Badge className="bg-red-600 text-white">
+                        ❌ Rejected – Not visible on Coaches page
+                      </Badge>
+                    )}
+
+                    {/* DETAILS */}
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <b>Specialization:</b> {coachRequest.specialization}
+                      </div>
+                      <div>
+                        <b>Experience:</b> {coachRequest.experience_years} years
+                      </div>
+                      <div>
+                        <b>Location:</b> {coachRequest.preferred_location}
+                      </div>
+                      <div>
+                        <b>Hourly Rate:</b> ₹{coachRequest.hourly_rate}
+                      </div>
+                    </div>
+
+                    {/* BIO */}
+                    <div>
+                      <b>Bio</b>
+                      <p className="text-muted-foreground">
+                        {coachRequest.bio}
+                      </p>
+                    </div>
+
+                    {/* ACHIEVEMENTS */}
+                    <div>
+                      <b>Achievements</b>
+                      <p className="text-muted-foreground">
+                        {coachRequest.achievements}
+                      </p>
+                    </div>
+
+                    {/* PROFILE IMAGE */}
+                    {coachRequest.profile_image && (
+                      <div>
+                        <b>Profile Image</b>
+                        <img
+                          src={`http://localhost:5000${coachRequest.profile_image}`}
+                          className="w-32 h-32 rounded-lg object-cover border mt-2 cursor-pointer"
+                          onClick={() =>
+                            window.open(
+                              `http://localhost:5000${coachRequest.profile_image}`,
+                              "_blank"
+                            )
+                          }
+                        />
+                      </div>
+                    )}
+
+                    {/* CERTIFICATE */}
+                    {coachRequest.certificate_url && (
+                      <div>
+                        <b>Certificate</b>
+                        <Button
+                          variant="outline"
+                          className="mt-2"
+                          onClick={() =>
+                            window.open(
+                              `http://localhost:5000${coachRequest.certificate_url}`,
+                              "_blank"
+                            )
+                          }
+                        >
+                          View Certificate
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+
+            {/* ================= TRANNING TAB ================= */}
+
+            <TabsContent value="training" className="space-y-6">
+              {!coachTraining && (
+                <Card>
+                  <CardContent className="p-6 text-muted-foreground">
+                    No active coach training found.
+                  </CardContent>
+                </Card>
+              )}
+
+              {coachTraining && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>My Coach Training</CardTitle>
+                    <CardDescription>
+                      Active monthly training details
+                    </CardDescription>
+                  </CardHeader>
+
+                  <CardContent className="space-y-4 text-sm">
+                    {/* COACH */}
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div><b>Coach:</b> {coachTraining.coach_name}</div>
+                      <div><b>Specialization:</b> {coachTraining.specialization}</div>
+                      <p>
+                        <b>Trainee:</b>{" "}
+                        {activeCoach.participant_first_name}{" "}
+                        {activeCoach.participant_last_name}
+                      </p>
+                    </div>
+                    {/* DATES */}
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div><b>Start Date:</b> {safeDate(coachTraining.start_date)}</div>
+                      <div><b>End Date:</b> {safeDate(coachTraining.end_date)}</div>
+                      <div>
+                        <b>Days Remaining:</b>{" "}
+                        {calculateDaysRemaining(coachTraining.end_date)} days
+                      </div>
+                    </div>
+
+                    {/* PAYMENT */}
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div><b>Amount Paid:</b> ₹{coachTraining.final_amount}</div>
+                      <Badge className="bg-emerald-100 text-emerald-700">
+                        Paid
+                      </Badge>
+                    </div>
+
+                    {/* USER FORM SNAPSHOT */}
+                    {coachTraining.user_form_snapshot && (
+                      <div className="bg-muted p-4 rounded-lg">
+                        <b>User Details</b>
+                        <pre className="text-xs mt-2">
+                          {JSON.stringify(coachTraining.user_form_snapshot, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+
+                    {/* REVIEW */}
+                    <div className="border-t pt-4 space-y-3">
+                      <Label>Rate Coach</Label>
+                      <div className="flex gap-4">
+                        {[1,2,3,4,5].map((r) => (
+                          <label key={r} className="flex items-center gap-1">
+                            <input
+                              type="radio"
+                              name="rating"
+                              value={r}
+                              checked={rating === r}
+                              onChange={() => setRating(r)}
+                            />
+                            {r}
+                          </label>
+                        ))}
+                      </div>
+                      <Textarea placeholder="Write your review" 
+                        value={review}
+                          onChange={(e) => setReview(e.target.value)}/>
+                      <Button 
+                        onClick={handleSubmitReview}
+                        className="bg-orange-500">
+                        Submit Review
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
 
             {/* ================= PERSONAL INFORMATION TAB ================= */}
             <TabsContent value="settings" className="space-y-6">

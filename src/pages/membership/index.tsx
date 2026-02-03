@@ -9,7 +9,7 @@ const membership = () => {
   return (
     <Layout>
       <div className="min-h-screen bg-background">
-        <main className="pt-16">
+        <main className="pt-0">
           <HeroSection />
           <PlansSection />
           <ComparisonTable />

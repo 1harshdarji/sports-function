@@ -67,7 +67,7 @@ const PlansSection = () => {
         {/* Section header */}
         <div className="text-center max-w-2xl mx-auto mb-16">
           <h2 className="font-display text-3xl sm:text-4xl font-bold text-[#0f172a] mb-4">
-            Choose Your <span className="text-gradient">Perfect Plan</span>
+            Choose Your <span className="text-[#f97316]">Perfect Plan</span>
           </h2>
           <p className="text-[#6b7280] text-lg">
             Flexible memberships designed for every athlete, from casual players to professionals.

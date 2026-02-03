@@ -30,7 +30,7 @@ const HowItWorks = () => {
         {/* Section header */}
         <div className="text-center max-w-2xl mx-auto mb-16">
           <h2 className="font-display text-3xl sm:text-4xl font-bold text-[#0f172a] mb-4">
-            How It <span className="text-gradient">Works</span>
+            How It <span className="text-[#f97316]">Works</span>
           </h2>
           <p className="text-[#6b7280] text-lg">
             Get started with your SportHub membership in four simple steps.

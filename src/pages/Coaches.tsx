@@ -1,95 +1,15 @@
-import { Star, ChevronDown, Shield, Award, Lock, Calendar, X, MapPin, Clock, CheckCircle } from "lucide-react";
+import { Star, ChevronDown, Shield, Award, Lock, Calendar, Clock, CheckCircle } from "lucide-react";
 import coachesHero from "@/assets/coaches-hero.jpg";
 import { Layout } from "@/components/Layout";
-
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Heart } from "lucide-react";
+import axios from "axios";
 
 const sports = ["Football", "Cricket", "Gym", "Swimming", "Yoga", "Tennis"];
 const locations = ["Downtown", "Uptown", "Midtown", "Suburbs"];
 const availability = ["Today", "This Week", "Weekends", "Flexible"];
 const levels = ["Beginner", "Intermediate", "Advanced", "All Levels"];
-
-const coaches = [
-  {
-    name: "Marcus Johnson",
-    sport: "Football",
-    experience: 12,
-    rating: 4.9,
-    reviews: 156,
-    bio: "Former professional player with UEFA coaching license. Specialized in youth development and tactical training.",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face",
-    tags: ["Certified", "Advanced"],
-    price: "$75/hr",
-  },
-  {
-    name: "Sarah Chen",
-    sport: "Yoga",
-    experience: 8,
-    rating: 5.0,
-    reviews: 203,
-    bio: "RYT-500 certified yoga instructor. Expert in Vinyasa, Hatha, and therapeutic yoga practices.",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&crop=face",
-    tags: ["Beginner Friendly", "Certified"],
-    price: "$60/hr",
-  },
-  {
-    name: "David Martinez",
-    sport: "Swimming",
-    experience: 15,
-    rating: 4.8,
-    reviews: 89,
-    bio: "Olympic trials qualifier and certified lifeguard. Teaches all strokes from beginner to competitive level.",
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face",
-    tags: ["Advanced", "Certified"],
-    price: "$85/hr",
-  },
-  {
-    name: "Emma Williams",
-    sport: "Tennis",
-    experience: 10,
-    rating: 4.9,
-    reviews: 134,
-    bio: "WTA ranked player turned coach. Specializes in serve technique and match strategy.",
-    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&crop=face",
-    tags: ["Beginner Friendly", "Advanced"],
-    price: "$70/hr",
-  },
-  {
-    name: "James Thompson",
-    sport: "Gym",
-    experience: 7,
-    rating: 4.7,
-    reviews: 178,
-    bio: "NASM certified personal trainer. Expert in strength training, HIIT, and body transformation programs.",
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop&crop=face",
-    tags: ["Beginner Friendly", "Certified"],
-    price: "$55/hr",
-  },
-  {
-    name: "Priya Sharma",
-    sport: "Cricket",
-    experience: 11,
-    rating: 4.8,
-    reviews: 92,
-    bio: "Former national team player. Specializes in batting technique, bowling, and fielding drills.",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop&crop=face",
-    tags: ["Advanced", "Certified"],
-    price: "$65/hr",
-  },
-];
-
-const featuredCoach = {
-  name: "Marcus Johnson",
-  sport: "Football",
-  experience: 12,
-  rating: 4.9,
-  reviews: 156,
-  bio: "Former professional player with UEFA coaching license. Marcus has trained over 500 athletes across various skill levels, from youth academies to semi-professional teams. His methodology combines technical skill development with mental conditioning and tactical awareness.",
-  avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face",
-  certifications: ["UEFA A License", "Sports Psychology Certificate", "First Aid Certified"],
-  sportsHandled: ["Football", "Futsal", "Fitness Training"],
-  availableDays: ["Mon", "Tue", "Wed", "Thu", "Sat"],
-  price: "$75/hr",
-};
 
 const trustItems = [
   {
@@ -153,176 +73,133 @@ const FilterDropdown = ({ label, options }: { label: string; options: string[] }
     </div>
   </div>
 );
+type Coach = {
+  id: number;
+  name: string;
+  specialization: string;
+  experienceYears: number;
+  hourlyRate?: number;
+  profile_image?: string;
+};
 
-const CoachCard = ({ coach }: { coach: typeof coaches[0] }) => (
-  <div className="group rounded-2xl border border-border bg-card p-6 shadow-card transition-all duration-300 hover:shadow-card-hover hover:-translate-y-1">
-    <div className="flex flex-col items-center text-center">
-      <div className="relative mb-4">
+const CoachCard = ({
+  coach,
+  navigate,
+}: {
+  coach: Coach;
+  navigate: (path: string) => void;
+}) => {
+  const [isLiked, setIsLiked] = useState(false);
+
+  return (
+    <div
+      className="group cursor-pointer rounded-xl overflow-hidden bg-card card-shadow hover:card-shadow-hover transition-all duration-300 hover:-translate-y-1"
+    >
+      {/* IMAGE */}
+      <div className="relative aspect-[4/5] w-full overflow-hidden">
         <img
-          src={coach.avatar}
+          src={
+            coach.profile_image
+              ? coach.profile_image // `http://localhost:5000${coach.profile_image}`
+              : "https://via.placeholder.com/400x500"
+          }
           alt={coach.name}
-          className="h-24 w-24 rounded-full object-cover ring-4 ring-muted"
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
-        <div className="absolute -bottom-1 -right-1 rounded-full bg-success p-1">
-          <CheckCircle className="h-4 w-4 text-success-foreground" />
-        </div>
-      </div>
-      
-      <h3 className="text-lg font-semibold text-foreground">{coach.name}</h3>
-      <p className="text-sm font-medium text-orange-500">{coach.sport}</p>
-      
-      <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
-        <Clock className="h-4 w-4" />
-        <span>{coach.experience} years experience</span>
-      </div>
-      
-      <div className="mt-2">
-        <StarRating rating={coach.rating} />
-        <span className="text-xs text-muted-foreground">({coach.reviews} reviews)</span>
-      </div>
-      
-      <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">
-        {coach.bio}
-      </p>
-      
-      <div className="mt-4 flex flex-wrap justify-center gap-2">
-        {coach.tags.map((tag) => (
-          <span
-            key={tag}
-            className={`rounded-full px-3 py-1 text-xs font-medium ${
-              tag === "Certified"
-                ? "bg-success/10 text-success"
-                : tag === "Advanced"
-                ? "bg-orange-500/10 text-orange-500"
-                : "bg-accent text-accent-foreground"
-            }`}
-          >
-            {tag}
-          </span>
-        ))}
-      </div>
-      
-      <p className="mt-4 text-lg font-bold text-foreground">{coach.price}</p>
-      
-      <div className="mt-4 flex w-full gap-3">
-        <button className="flex-1 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground transition-all hover:bg-muted hover:border-foreground/20">
-          View Profile
-        </button>
-        <button className="flex-1 rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-orange-600 hover:shadow-lg">
-          Book Session
-        </button>
-      </div>
-    </div>
-  </div>
-);
 
-const CoachProfilePreview = ({ coach }: { coach: typeof featuredCoach }) => (
-  <div className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-card-hover">
-    <div className="absolute right-4 top-4">
-      <button className="rounded-full bg-muted p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground">
-        <X className="h-5 w-5" />
-      </button>
-    </div>
-    
-    <div className="p-8">
-      <div className="flex flex-col items-center gap-8 lg:flex-row lg:items-start">
-        <div className="flex-shrink-0">
-          <img
-            src={coach.avatar}
-            alt={coach.name}
-            className="h-40 w-40 rounded-2xl object-cover shadow-lg"
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+
+        {/* Sport badge */}
+        <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-card/90 backdrop-blur-sm text-xs font-medium text-foreground">
+          {coach.specialization}
+        </span>
+
+        {/* Like */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsLiked(!isLiked);
+          }}
+          className="absolute top-3 right-3 w-9 h-9 rounded-full bg-card/90 backdrop-blur-sm flex items-center justify-center"
+        >
+          <Heart
+            className={`w-4 h-4 ${
+              isLiked ? "fill-accent text-accent" : "text-foreground"
+            }`}
           />
-        </div>
-        
-        <div className="flex-1 text-center lg:text-left">
-          <div className="flex flex-col items-center gap-2 lg:flex-row lg:items-center">
-            <h2 className="text-2xl font-bold text-foreground">{coach.name}</h2>
-            <span className="rounded-full bg-success/10 px-3 py-1 text-sm font-medium text-success">
-              Verified Coach
+        </button>
+
+        {/* Price */}
+        {coach.hourlyRate !== undefined && (
+          <div className="absolute bottom-3 left-3 px-3 py-1.5 rounded-lg bg-card/95 backdrop-blur-sm">
+            <span className="text-sm font-bold text-foreground">
+              ₹{coach.hourlyRate}
             </span>
+            <span className="text-xs text-muted-foreground ml-1">/Monthly</span>
           </div>
-          
-          <p className="mt-1 text-lg font-medium text-orange-500">{coach.sport} Specialist</p>
-          
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-4 text-sm text-muted-foreground lg:justify-start">
-            <div className="flex items-center gap-1">
-              <Clock className="h-4 w-4" />
-              <span>{coach.experience} years exp.</span>
-            </div>
-            <StarRating rating={coach.rating} />
-            <span>({coach.reviews} reviews)</span>
-          </div>
-          
-          <p className="mt-4 text-muted-foreground">{coach.bio}</p>
-          
-          <div className="mt-6">
-            <h4 className="font-semibold text-foreground">Certifications</h4>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {coach.certifications.map((cert) => (
-                <span
-                  key={cert}
-                  className="flex items-center gap-1 rounded-full bg-accent px-3 py-1 text-sm text-accent-foreground"
-                >
-                  <Award className="h-3 w-3" />
-                  {cert}
-                </span>
-              ))}
-            </div>
-          </div>
-          
-          <div className="mt-6">
-            <h4 className="font-semibold text-foreground">Sports Coached</h4>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {coach.sportsHandled.map((sport) => (
-                <span
-                  key={sport}
-                  className="rounded-full bg-muted px-3 py-1 text-sm text-muted-foreground"
-                >
-                  {sport}
-                </span>
-              ))}
-            </div>
-          </div>
-          
-          <div className="mt-6">
-            <h4 className="font-semibold text-foreground">Available Days</h4>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
-                <span
-                  key={day}
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                    coach.availableDays.includes(day)
-                      ? "bg-orange-500 text-white"
-                      : "bg-muted text-muted-foreground/50"
-                  }`}
-                >
-                  {day}
-                </span>
-              ))}
-            </div>
-          </div>
-          
-          <div className="mt-6 flex items-center justify-between rounded-xl bg-muted/50 p-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Session Price</p>
-              <p className="text-2xl font-bold text-foreground">{coach.price}</p>
-            </div>
-            <div className="flex gap-3">
-              <button className="rounded-lg border border-border bg-card px-6 py-3 font-medium text-foreground transition-all hover:bg-muted">
-                Contact Coach
-              </button>
-              <button className="rounded-lg bg-orange-500 px-6 py-3 font-semibold text-white transition-all hover:bg-orange-600 hover:shadow-lg">
-                Book Session
-              </button>
-            </div>
-          </div>
+        )}
+      </div>
+
+      {/* CONTENT */}
+      <div className="p-4 space-y-3">
+        <h3 className="font-semibold text-lg text-foreground">
+          {coach.name}
+        </h3>
+
+        <p className="text-sm text-orange-500 font-medium">
+          {coach.specialization}
+        </p>
+
+        <div className="flex gap-3 pt-2">
+          <button
+            onClick={() => navigate(`/coaches/${coach.id}`)}
+            className="flex-1 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium"
+          >
+            View Profile
+          </button>
+
+          <button
+            onClick={() => navigate(`/coaches/${coach.id}/book`)}
+            className="flex-1 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
+          >
+            Book Session
+          </button>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
+
 
 const CoachesPage = () => {
+  const navigate = useNavigate();
+  const [coaches, setCoaches] = useState<Coach[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+  axios
+    .get("http://localhost:5000/api/coaches")
+    .then(res => {
+      const mapped = res.data.data.map((c: any) => ({
+        id: c.id,
+        name: c.name,                 
+        specialization: c.specialization,
+        experienceYears: c.experience_years,
+        hourlyRate: Number(c.hourlyRate),
+        profile_image: c.profile_image
+          ? `http://localhost:5000${c.profile_image}`
+          : null,
+      }));
+
+      setCoaches(mapped);
+    })
+    .catch(console.error)
+    .finally(() => setLoading(false));
+}, []);
+
+
+
   return (
     <Layout>
       <div className="min-h-screen bg-background">
@@ -345,7 +222,9 @@ const CoachesPage = () => {
               <button className="rounded-lg bg-orange-500 px-8 py-3 font-semibold text-white transition-all hover:bg-orange-600 hover:shadow-lg">
                 Find a Coach
               </button>
-              <button className="rounded-lg border-2 border-primary-foreground/30 bg-primary-foreground/10 px-8 py-3 font-semibold text-primary-foreground backdrop-blur transition-all hover:bg-primary-foreground/20">
+              <button 
+                onClick={() => navigate("/become-coach")}
+                className="rounded-lg border-2 border-primary-foreground/30 bg-primary-foreground/10 px-8 py-3 font-semibold text-primary-foreground backdrop-blur transition-all hover:bg-primary-foreground/20">
                 Become a Coach
               </button>
             </div>
@@ -389,8 +268,13 @@ const CoachesPage = () => {
             </div>
             
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {coaches.map((coach, index) => (
-                <CoachCard key={index} coach={coach} />
+              {loading && <p>Loading coaches...</p>}
+              {!loading && coaches.length === 0 && (
+                <p className="text-muted-foreground">No coaches available yet</p>
+              )}
+
+              {coaches.map((coach) => (
+                <CoachCard key={coach.id} coach={coach} navigate={navigate} />
               ))}
             </div>
             
@@ -401,20 +285,6 @@ const CoachesPage = () => {
             </div>
           </div>
         </section>
-
-        {/* Coach Profile Preview */}
-        <section className="bg-muted/30 py-16">
-          <div className="mx-auto max-w-5xl px-4">
-            <div className="mb-8 text-center">
-              <h2 className="text-2xl font-bold text-foreground md:text-3xl">Featured Coach</h2>
-              <p className="mt-1 text-muted-foreground">
-                Get to know our top-rated professional
-              </p>
-            </div>
-            <CoachProfilePreview coach={featuredCoach} />
-          </div>
-        </section>
-
         {/* Trust & Quality Section */}
         <section className="py-16">
           <div className="mx-auto max-w-7xl px-4">

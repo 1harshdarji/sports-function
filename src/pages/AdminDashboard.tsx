@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import AdminEvents from "./admin/AdminEvents"; // added
+import AdminCoaches from "./admin/AdminCoaches";
+
 
 import {
   Users,
@@ -62,7 +64,7 @@ const AdminDashboard = () => {
   const location = useLocation();
 
   /* ---------- STATE ---------- */
-  const [view, setView] = useState<"dashboard" | "members" | "activeBookings" | "events" >("dashboard"); //added events
+  const [view, setView] = useState<"dashboard" | "members" | "activeBookings" | "events" | "coaches" >("dashboard"); //added events
   const [users, setUsers] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
@@ -302,6 +304,8 @@ const disableUser = async (id: number) => {
                   if (stat.key === "members") setView("members");
                   if (stat.key === "bookings") setView("activeBookings");
                   if (stat.key === "events") setView("events");
+                  if (stat.key === "coaches") setView("coaches");
+
                 }}
               >
                 <CardContent className="p-5">
@@ -386,10 +390,8 @@ const disableUser = async (id: number) => {
                 </CardContent>
               </Card>
             )}
-            {view === "events" && ( //added
-              <AdminEvents />
-            )}
-
+            {view === "events" && ( <AdminEvents />)}
+            {view === "coaches" && <AdminCoaches />}
 
           {/* ================= RECENT ================= */}
           <div className="grid lg:grid-cols-2 gap-6">
