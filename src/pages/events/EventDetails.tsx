@@ -139,6 +139,33 @@ const EventDetails = () => {
                   </button>
                 </div>
               </div>
+              {/* DESCRIPTION */}
+              <div className="mt-16 max-w-4xl mx-auto">
+                <h2 className="text-2xl font-bold mb-4">
+                  About the Event
+                </h2>
+                <p className="text-muted-foreground">
+                  {event.description}
+                </p>
+              </div>
+
+              {/* VENUE */}
+              <div className="mt-12 max-w-4xl mx-auto">
+                <h2 className="text-2xl font-bold mb-4">Venue</h2>
+                  <p className="font-medium text-lg">{event.location}</p>
+
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                        event.location
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 mt-2 text-sm text-accent hover:underline"
+                    >
+                      Get Directions
+                      <ArrowRight className="w-4 h-4" />
+                    </a>
+              </div>
             </motion.div>
 
             {/* DETAILS */}
@@ -189,34 +216,6 @@ const EventDetails = () => {
                 </div>
               </div>
             </motion.div>
-          </div>
-
-          {/* DESCRIPTION */}
-          <div className="mt-16 max-w-4xl mx-auto">
-            <h2 className="text-2xl font-bold mb-4">
-              About the Event
-            </h2>
-            <p className="text-muted-foreground">
-              {event.description}
-            </p>
-          </div>
-
-          {/* VENUE */}
-          <div className="mt-12 max-w-4xl mx-auto">
-            <h2 className="text-2xl font-bold mb-4">Venue</h2>
-              <p className="font-medium text-lg">{event.location}</p>
-
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                    event.location
-                  )}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 mt-2 text-sm text-accent hover:underline"
-                >
-                  Get Directions
-                  <ArrowRight className="w-4 h-4" />
-                </a>
           </div>
         </div>
       </div>

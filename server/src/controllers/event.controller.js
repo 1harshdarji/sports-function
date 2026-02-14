@@ -65,7 +65,7 @@ const getEventById = async (req, res, next) => {
 
     const [dates] = await db.execute(
       `
-      SELECT DISTINCT event_date
+      SELECT DISTINCT DATE_FORMAT(event_date, '%Y-%m-%d') AS event_date
       FROM event_slots
       WHERE event_id = ?
       ORDER BY event_date ASC
@@ -126,7 +126,7 @@ const getEventSlotsByDate = async (req, res, next) => {
         END AS status
       FROM event_slots
       WHERE event_id = ?
-        AND DATE(event_date) = DATE(?)
+        AND DATE(event_date) = ?
       ORDER BY start_time ASC
       `,
       [eventId, date]
@@ -184,7 +184,8 @@ const createEvent = async (req, res, next) => {
   const last = new Date(end_date);
 
   while (current <= last) {
-    const dateStr = current.toISOString().slice(0, 10);
+    //const dateStr = current.toISOString().slice(0, 10);
+    const dateStr = current.toLocaleDateString("en-CA");
 
     for (const slot of slotTimes) {
       await conn.execute(

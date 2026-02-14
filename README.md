@@ -56,39 +56,26 @@ Backend runs on http://localhost:5000
 
 #The frontend communicates with the backend using REST APIs over HTTP.
 
-Project Objectives
+# Clone the repository
+git clone <your-repository-link>
 
-Manage sports club members and memberships
-Allow users to browse and book events
-Provide secure authentication and authorization
-Enable admins to manage events and event slots
-Allow admins to enable/disable event slots dynamically
-Build a clean, responsive, and scalable system
-Implement real-world backend integration using REST APIs
+# Navigate to project folder
+cd sports-club-hub-main
 
-Core Features
+# Install frontend dependencies
+npm install
 
-User Features
+# Start frontend server
+npm run dev
 
-User registration and login
-View available events
-View event slots with time, seats, and availability
-Book available event slots
-View personal bookings
+# Navigate to backend folder
+cd server
 
-Admin Features
+# Install backend dependencies
+npm install
 
-Secure admin login
-Admin dashboard with statistics
-View total members and active bookings
-View and manage all events
-Create new events (backend integrated)
-Manage event slots:
-View slots per event
-Enable or disable slots
-View bookings for specific events
-Manage users (view & disable users)
-
+# Start backend server
+npm start
 
 Frontend (React + Vite)
         |
@@ -99,4 +86,49 @@ Backend (Node.js + Express)
         |
 Database (MySQL)
 
+---
+
+## Detailed Project Objectives
+
+- Manage sports club members and memberships  
+- Allow users to browse and book events  
+- Provide secure authentication and authorization  
+- Enable admins to manage events and event slots  
+- Allow admins to enable/disable event slots dynamically  
+- Build a clean, responsive, and scalable system  
+- Implement real-world backend integration using REST APIs  
+
+---
+
+## Core Features
+
+### User Features
+
+- User registration and login  
+- View available events  
+- View event slots with time, seats, and availability  
+- Book available event slots  
+- View personal bookings  
+- Manage user profile  
+- Online membership payment integration  
+
+---
+
+### Admin Features
+
+- Secure admin login  
+- Admin dashboard with statistics  
+- View total members and active bookings  
+- View and manage all events  
+- Create new events  
+- Manage event slots:
+  - View slots per event  
+  - Enable or disable slots  
+  - View bookings for specific events  
+- Manage users (view, block, and disable users)  
+- Upload facility and event images  
+
+---
+
+## Project Folder Structure
 

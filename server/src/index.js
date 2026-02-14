@@ -52,11 +52,7 @@ app.use(express.urlencoded({ extended: true }));
 // =============================================
 // STATIC FILES (FACILITY IMAGES)
 // =============================================
-app.use(
-  '/uploads',
-  express.static(path.join(__dirname, '..', 'uploads'))
-);
-
+app.use('/uploads',express.static(path.join(__dirname, '..', 'uploads')));
 
 // Request logging (development)
 if (process.env.NODE_ENV === 'development') {

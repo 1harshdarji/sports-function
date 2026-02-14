@@ -51,11 +51,9 @@ const EventBooking = () => {
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [pricing, setPricing] = useState<any>(null);// MEMBERSHIP
 
-
   /* ================= HELPERS ================= */
-
   const formatDate = (dateStr: string) =>
-    new Date(dateStr + "T00:00:00").toLocaleDateString("en-IN", {
+    parseYMDToLocal(dateStr).toLocaleDateString("en-IN", {
       weekday: "short",
       day: "2-digit",
       month: "short",
@@ -76,6 +74,12 @@ const EventBooking = () => {
       daysInMonth: new Date(year, month + 1, 0).getDate(),
     };
   };
+  
+  // parse 'YYYY-MM-DD' into a LOCAL Date (avoids timezone shifts)
+  const parseYMDToLocal = (ymd: string) => {
+    const [y, m, d] = ymd.split('-').map(Number);
+    return new Date(y, m - 1, d); // local midnight of that day
+  };
 
   /* ================= LOAD EVENT ================= */
 
@@ -87,13 +91,15 @@ const EventBooking = () => {
       .then((res) => {
         const data = res.data.data;
         setEvent(data);
-        setAvailableDates(
-          data.available_dates.map((d: string) => d.split("T")[0])
-        );
-        setSelectedDate(
-          data.available_dates?.[0]?.split("T")[0] ?? null
-        );
-      })
+        // Clean dates to YYYY-MM-DD
+          const cleanedDates = data.available_dates.map((d: string) => d.split("T")[0]);
+          setAvailableDates(cleanedDates);
+
+          // Explicitly set the first date as selected if none is set
+          if (cleanedDates.length > 0) {
+            setSelectedDate(cleanedDates[0]);
+          }
+        })
       .catch(console.error);
   }, [eventId]);
 
@@ -107,6 +113,8 @@ const EventBooking = () => {
         params: { date: selectedDate },
       })
       .then((res) => {
+        console.log("Selected Date:", selectedDate);
+        console.log("Slots:", res.data.data);
         setSlots(res.data.data);
         setSelectedSlot(null);
       })
@@ -190,7 +198,6 @@ const EventBooking = () => {
     }
   };
 
-
   /* ================= UI ================= */
 
   const { firstDay, daysInMonth } = getDaysInMonth(currentMonth);
@@ -249,7 +256,7 @@ const EventBooking = () => {
               {view === "list" && (
                 <div className="bg-card border rounded-2xl p-4 flex gap-4 overflow-x-auto">
                   {availableDates.map((date) => {
-                    const d = new Date(date + "T00:00:00");
+                    const d = parseYMDToLocal(date);
                     const selected = selectedDate === date;
 
                     return (

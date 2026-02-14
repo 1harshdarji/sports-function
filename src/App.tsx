@@ -12,8 +12,8 @@ import MembershipCheckout from "@/pages/membership/MembershipCheckout";
 
 
 import Facilities from "./pages/Facilities";
-import Grounds from "./pages/Grounds"; //Added
-import Booking from "./pages/Booking"; // Added
+import Grounds from "./pages/Grounds"; 
+import Booking from "./pages/Booking"; 
 
 import EventsList from "@/pages/events/EventsList";
 import EventDetails from "./pages/events/EventDetails";
